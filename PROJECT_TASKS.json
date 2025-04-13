@@ -1359,6 +1359,11 @@
         "id": "AC18.0.6",
         "description": "Executar `zuya create <nome> next-nest` resulta em um projeto funcional com o layout visual do template ZuYa.",
         "status": "To Do"
+      },
+      {
+        "id": "AC18.0.7",
+        "description": "Template clonado contém as configurações otimizadas (ESLint Flat Config, Jest next/jest, TSConfig, dependências atualizadas) conforme ZUYA-11.",
+        "status": "To Do"
       }
     ],
     "status": "To Do",
