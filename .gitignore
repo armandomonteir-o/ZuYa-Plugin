@@ -7,3 +7,6 @@ cursor-prompts.txt
 
 # Cursor directory
 .cursor/
+
+# Learnings directory
+learnings/
