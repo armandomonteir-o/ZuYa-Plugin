@@ -1544,5 +1544,142 @@
       }
     ],
     "completionNotes": ""
+  },
+  {
+    "id": "ZUYA-19",
+    "taskType": "Feature",
+    "priority": "High",
+    "estimate": "L",
+    "summary": "Desenvolver Conteúdo do Template Next.js (Localmente)",
+    "description": "Desenvolver o conteúdo completo para o template Next.js (`zuya-plugin-template-nextjs`) dentro do diretório local `templates/nextjs`. O desenvolvimento deve incluir: (1) Geração da estrutura base com as otimizações da ZUYA-11 (ESLint, Jest, TSConfig, etc.). (2) Customização do layout/conteúdo visual (ex: `page.tsx`) para refletir a identidade \"ZuYa\". (3) Verificação local de build e execução. O resultado final deve ser commitado e posteriormente enviado por você para o repositório remoto do template.",
+    "acceptanceCriteria": [
+      {
+        "id": "AC19.0.1",
+        "description": "Diretório `templates/nextjs` contém uma estrutura de projeto Next.js funcional e completa.",
+        "status": "To Do"
+      },
+      {
+        "id": "AC19.0.2",
+        "description": "Configurações de ESLint, Jest, TSConfig e dependências em `templates/nextjs` estão alinhadas com as definições da ZUYA-11.",
+        "status": "To Do"
+      },
+      {
+        "id": "AC19.0.3",
+        "description": "Arquivo `templates/nextjs/src/app/page.tsx` (e/ou layout) contém o conteúdo/layout customizado \"ZuYa\".",
+        "status": "To Do"
+      },
+      {
+        "id": "AC19.0.4",
+        "description": "O template em `templates/nextjs` compila com sucesso (`npm run build` ou similar).",
+        "status": "To Do"
+      },
+      {
+        "id": "AC19.0.5",
+        "description": "O template em `templates/nextjs` executa localmente com sucesso (`npm run dev` ou similar).",
+        "status": "To Do"
+      },
+      {
+        "id": "AC19.0.6",
+        "description": "O conteúdo final em `templates/nextjs` está pronto para ser enviado ao repositório remoto dedicado.",
+        "status": "To Do"
+      }
+    ],
+    "status": "To Do",
+    "dependsOn": ["ZUYA-11"],
+    "subTasks": [
+      {
+        "id": "ZUYA-19.1",
+        "taskType": "Sub-Task",
+        "priority": "High",
+        "estimate": "M",
+        "summary": "Gerar estrutura base otimizada em templates/nextjs",
+        "description": "Popular o diretório local `templates/nextjs` com uma estrutura base Next.js que já inclua as configurações e dependências otimizadas definidas na ZUYA-11 (ESLint Flat Config, Jest, TSConfig, etc.).",
+        "acceptanceCriteria": [
+          {
+            "id": "AC19.1.1",
+            "description": "Diretório `templates/nextjs` existe e contém arquivos de configuração (package.json, tsconfig.json, eslint.config.mjs, jest.config.js, etc.).",
+            "status": "To Do"
+          },
+          {
+            "id": "AC19.1.2",
+            "description": "Configurações nos arquivos refletem as decisões da ZUYA-11.",
+            "status": "To Do"
+          }
+        ],
+        "status": "To Do",
+        "dependsOn": [],
+        "completionNotes": ""
+      },
+      {
+        "id": "ZUYA-19.2",
+        "taskType": "Sub-Task",
+        "priority": "High",
+        "estimate": "M",
+        "summary": "Customizar layout/conteúdo ZuYa em templates/nextjs",
+        "description": "Modificar os arquivos relevantes (principalmente `templates/nextjs/src/app/page.tsx` e `templates/nextjs/src/app/layout.tsx`) para implementar o visual e conteúdo específicos desejados para o template ZuYa.",
+        "acceptanceCriteria": [
+          {
+            "id": "AC19.2.1",
+            "description": "Arquivo `page.tsx` modificado com conteúdo ZuYa.",
+            "status": "To Do"
+          },
+          {
+            "id": "AC19.2.2",
+            "description": "Arquivo `layout.tsx` modificado (se necessário) com estrutura/estilos ZuYa.",
+            "status": "To Do"
+          }
+        ],
+        "status": "To Do",
+        "dependsOn": ["ZUYA-19.1"],
+        "completionNotes": ""
+      },
+      {
+        "id": "ZUYA-19.3",
+        "taskType": "Sub-Task",
+        "priority": "High",
+        "estimate": "S",
+        "summary": "Verificar build e execução local do template",
+        "description": "Executar os comandos de build (`npm run build`) e execução (`npm run dev`) dentro do diretório `templates/nextjs` para garantir que o template customizado está funcional.",
+        "acceptanceCriteria": [
+          {
+            "id": "AC19.3.1",
+            "description": "Comando `npm install` (ou yarn/pnpm) dentro de `templates/nextjs` executa sem erros.",
+            "status": "To Do"
+          },
+          {
+            "id": "AC19.3.2",
+            "description": "Comando `npm run build` dentro de `templates/nextjs` executa sem erros.",
+            "status": "To Do"
+          },
+          {
+            "id": "AC19.3.3",
+            "description": "Comando `npm run dev` dentro de `templates/nextjs` inicia o servidor com sucesso.",
+            "status": "To Do"
+          }
+        ],
+        "status": "To Do",
+        "dependsOn": ["ZUYA-19.2"],
+        "completionNotes": ""
+      },
+      {
+        "id": "ZUYA-19.4",
+        "taskType": "Sub-Task",
+        "priority": "High",
+        "estimate": "S",
+        "summary": "(Manual) Commit local e Push para repositório remoto do template",
+        "description": "Você deve fazer o commit do conteúdo final de `templates/nextjs` e enviá-lo (push) para o repositório remoto `https://github.com/armandomonteir-o/zuya-plugin-template-nextjs.git`.",
+        "acceptanceCriteria": [
+          {
+            "id": "AC19.4.1",
+            "description": "Usuário confirma que o push para o repositório remoto do template foi concluído.",
+            "status": "To Do"
+          }
+        ],
+        "status": "To Do",
+        "dependsOn": ["ZUYA-19.3"],
+        "completionNotes": ""
+      }
+    ],
+    "completionNotes": "Esta tarefa desenvolve o *conteúdo* do template localmente. Sua conclusão e o push manual (ZUYA-19.4) desbloqueiam a ZUYA-18.6."
   }
 ]
