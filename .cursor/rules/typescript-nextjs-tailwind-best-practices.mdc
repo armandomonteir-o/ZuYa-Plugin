@@ -1,6 +1,11 @@
 ---
 description: Best practices for frontend development using TypeScript, Next.js (App Router), and Tailwind CSS
 globs: app/**/*.{ts,tsx}, components/**/*.{ts,tsx}, src/**/*.{ts,tsx}, tailwind.config.ts, next.config.*, tsconfig.json, postcss.config.*
+alwaysApply: false
+---
+---
+description: Best practices for frontend development using TypeScript, Next.js (App Router), and Tailwind CSS
+globs: app/**/*.{ts,tsx}, components/**/*.{ts,tsx}, src/**/*.{ts,tsx}, tailwind.config.ts, next.config.*, tsconfig.json, postcss.config.*
 ---
 # Best Practices: TypeScript + Next.js + Tailwind CSS
 

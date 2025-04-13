@@ -1,6 +1,11 @@
 ---
 description: Project-specific UI/UX guidelines (Tailwind CSS for Next.js). Start from this template and refine during Step 2 of the Development Workflow.
 globs: app/**/*.{ts,tsx}, components/**/*.{ts,tsx}, src/**/*.{ts,tsx}, styles/**/*.css, tailwind.config.ts
+alwaysApply: false
+---
+---
+description: Project-specific UI/UX guidelines (Tailwind CSS for Next.js). Start from this template and refine during Step 2 of the Development Workflow.
+globs: app/**/*.{ts,tsx}, components/**/*.{ts,tsx}, src/**/*.{ts,tsx}, styles/**/*.css, tailwind.config.ts
 ---
 # Visual Style and UI/UX Guidelines (Tailwind CSS + Next.js)
 

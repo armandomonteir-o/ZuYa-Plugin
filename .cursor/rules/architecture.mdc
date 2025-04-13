@@ -1,6 +1,11 @@
 ---
 description: General software architecture principles (SOLID, KISS, DRY), design considerations (scalability, security), common patterns, and specific project conventions (Docker, Communication).
 globs: Dockerfile, docker-compose.yml
+alwaysApply: false
+---
+---
+description: General software architecture principles (SOLID, KISS, DRY), design considerations (scalability, security), common patterns, and specific project conventions (Docker, Communication).
+globs: Dockerfile, docker-compose.yml
 ---
 # Software Architecture & Project Conventions
 

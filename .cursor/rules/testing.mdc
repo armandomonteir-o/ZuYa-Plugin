@@ -3,6 +3,11 @@ description: Guidelines and learnings about unit, integration, and E2E tests wit
 globs: ["**/*.{test,spec}.{ts,tsx,js,jsx}"]
 alwaysApply: false
 ---
+---
+description: Guidelines and learnings about unit, integration, and E2E tests with Jest and related tools.
+globs: ["**/*.{test,spec}.{ts,tsx,js,jsx}"]
+alwaysApply: false
+---
 
 # Jest Testing Guidelines
 

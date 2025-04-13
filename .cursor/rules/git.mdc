@@ -1,6 +1,11 @@
 ---
 description: Guidelines for writing Git commit messages using the Conventional Commits specification.
 globs: [] # Typically not file-specific
+alwaysApply: false
+---
+---
+description: Guidelines for writing Git commit messages using the Conventional Commits specification.
+globs: [] # Typically not file-specific
 ---
 
 # Git Commit Message Guidelines (Conventional Commits)

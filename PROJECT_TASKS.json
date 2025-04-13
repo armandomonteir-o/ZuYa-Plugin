@@ -1304,23 +1304,23 @@
       {
         "id": "AC17.0.1",
         "description": "README.md contém uma seção clara para instalação no Ubuntu.",
-        "status": "To Do"
+        "status": "Done"
       },
       {
         "id": "AC17.0.2",
         "description": "Instruções incluem pré-requisitos (Oh My Zsh, git, zsh).",
-        "status": "To Do"
+        "status": "Done"
       },
       {
         "id": "AC17.0.3",
         "description": "Instruções incluem o comando de clonagem e adição ao .zshrc.",
-        "status": "To Do"
+        "status": "Done"
       }
     ],
-    "status": "To Do",
+    "status": "Done",
     "dependsOn": [],
     "subTasks": [],
-    "completionNotes": ""
+    "completionNotes": "Seção de instalação no README.md foi atualizada com pré-requisitos e instruções para Ubuntu/Debian e instalação do Oh My Zsh."
   },
   {
     "id": "ZUYA-18",

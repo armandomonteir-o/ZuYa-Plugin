@@ -1,6 +1,11 @@
 ---
 description: Centralized best practices for creating efficient, secure, and maintainable Dockerfiles and managing Docker environments.
 globs: ["**/Dockerfile*", "**/*.dockerfile", "**/docker-compose*.yml"]
+alwaysApply: false
+---
+---
+description: Centralized best practices for creating efficient, secure, and maintainable Dockerfiles and managing Docker environments.
+globs: ["**/Dockerfile*", "**/*.dockerfile", "**/docker-compose*.yml"]
 ---
 # Docker Best Practices
 
@@ -111,7 +116,7 @@ This document outlines best practices for working with Docker, particularly focu
 
 ## 7. Example: `docker-compose.yml` for Local Lambda Development/Testing (with RIE)
 
-- **Purpose:** To simulate the Lambda environment locally for development and testing using the official [AWS Lambda Runtime Interface Emulator (RIE)](https://github.com/aws/aws-lambda-runtime-interface-emulator).
+- **Purpose:** To simulate the Lambda environment locally for development and testing using the official [AWS Lambda Runtime Interface Emulator (RIE)](mdc:https:/github.com/aws/aws-lambda-runtime-interface-emulator).
 - **How it Works:** The `docker-compose.yml` builds your Lambda function using the `Dockerfile` (like the one above) and runs it with the RIE. The RIE exposes a local HTTP endpoint (e.g., on port 9000) that mimics the Lambda invocation API.
 - **Example `docker-compose.yml`:**
   ```yaml

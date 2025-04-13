@@ -1,6 +1,11 @@
 ---
 description: Best practices for NestJS backend development using TypeScript.
 globs: src/**/*.ts, *.spec.ts, *.e2e-spec.ts
+alwaysApply: false
+---
+---
+description: Best practices for NestJS backend development using TypeScript.
+globs: src/**/*.ts, *.spec.ts, *.e2e-spec.ts
 ---
 # Best Practices: TypeScript + NestJS
 

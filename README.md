@@ -57,23 +57,43 @@ personalizadas do Cursor.
 
 ## Instalação
 
-1.  Clone este repositório (ou copie os arquivos) para o diretório de plugins customizados do Oh My Zsh:
+**Pré-requisitos (Ubuntu / Debian-based):**
+
+Antes de instalar o plugin, certifique-se de que possui `zsh`, `git` e `curl` (ou `wget`) instalados. Você pode instalá-los com:
+
+```bash
+sudo apt update && sudo apt install zsh git curl
+```
+
+**Instalando Oh My Zsh:**
+
+Este plugin requer o [Oh My Zsh](https://ohmyz.sh/). Se ainda não o tiver, instale-o (isso geralmente também define Zsh como seu shell padrão):
+
+```bash
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+```
+
+_Siga as instruções na tela após a execução do comando._
+
+**Instalando o Plugin ZuYa:**
+
+1.  Clone este repositório para o diretório de plugins customizados do Oh My Zsh:
 
     ```bash
-    # Exemplo usando Git (recomendado)
-    git clone <URL_DO_SEU_FUTURO_REPO> ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zuya
+    # Substitua <URL_DO_SEU_REPO> pela URL real do repositório ZuYa
+    git clone <URL_DO_SEU_REPO> ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zuya
     ```
 
-    Ou copie manualmente o diretório `zuya-oh-my-zsh-plugin` inteiro para
-    `${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/` e renomeie-o para `zuya`.
+    _Alternativamente, copie manualmente o diretório do plugin para `${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/` e renomeie-o para `zuya`._
 
-2.  Adicione `zuya` à lista de plugins no seu arquivo `~/.zshrc`:
+2.  Adicione `zuya` à lista de plugins no seu arquivo `~/.zshrc`. Encontre a linha que começa com `plugins=` e adicione `zuya`:
 
     ```zsh
-    plugins=(... zuya)
+    # Exemplo:
+    plugins=(git otherplugin zuya)
     ```
 
-3.  Recarregue sua configuração do Zsh:
+3.  Recarregue sua configuração do Zsh para aplicar as mudanças:
     ```zsh
     source ~/.zshrc
     ```

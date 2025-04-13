@@ -1,4 +1,9 @@
 ---
+description: Our standard collaborative workflow for initiating projects, breaking down tasks, implementing features, and fostering learning with Cursor. **Now includes iterative planning and enhanced artifact tracking.
+globs: [] # Not file-specific
+alwaysApply: false
+---
+---
 description: Our standard collaborative workflow for initiating projects, breaking down tasks, implementing features, and fostering learning with Cursor. **Now includes iterative planning and enhanced artifact tracking.**
 globs: [] # Not file-specific
 alwaysApply: false
