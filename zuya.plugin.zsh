@@ -312,9 +312,13 @@ setup_nextjs() {
   # Entrar no diretório (necessário para próximas etapas como rm .git e npm install)
   cd "$dir_name" || { echo "❌ Falha ao entrar no diretório '$dir_name' após clonagem."; return 1; }
 
-  # A remoção do .git (ZUYA-18.4) e instalação (ZUYA-18.5) virão nas próximas subtarefas
+  # Remover histórico Git do template
+  echo "🧹 Removendo histórico Git do template..."
+  rm -rf .git || { echo "⚠️ Falha ao remover o diretório .git do template (pode não existir ou erro de permissão)."; }
 
-  echo "✅ Template Next.js clonado com sucesso para '$dir_name'."
+  # A instalação (ZUYA-18.5) virá na próxima subtarefa
+
+  echo "✅ Template Next.js clonado e limpo com sucesso em '$dir_name'."
   cd .. # Voltar para o diretório raiz do projeto para manter consistência
   return 0 # Indicar sucesso
 }
