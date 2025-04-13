@@ -3,6 +3,10 @@
 # ZuYa - Assistente mágico para desenvolvimento fullstack TypeScript
 # Versão: 1.0.1 (Abril 2025)
 
+# --- Configurações ---
+# URL do repositório template Next.js (usado por setup_nextjs)
+_ZUYA_NEXTJS_TEMPLATE_URL="https://github.com/armandomonteir-o/zuya-plugin-template-nextjs.git"
+
 # Diretório onde seus arquivos .mdc estão armazenados
 # Permite sobrescrever via variável de ambiente ZAYA_MDC_TEMPLATES_DIR
 # Modificado para usar o caminho do repositório de guidelines como padrão
