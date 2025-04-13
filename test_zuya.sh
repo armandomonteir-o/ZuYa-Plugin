@@ -112,11 +112,66 @@ _verify_mdc_files() {
     return $?
 }
 
+# Função auxiliar para executar um comando dentro de um subdiretório do projeto gerado
+_run_project_command() {
+  local project_base_dir="$1" # Caminho base onde o projeto foi criado (e.g., $TEST_DIR_BASE/$test_subdir/$project_name)
+  local sub_path="$2"         # Subdiretório onde o comando deve rodar (e.g., "frontend")
+  local command_to_run="$3"   # O comando a ser executado
+  local description="$4"      # Descrição para logs
+
+  local full_path="$project_base_dir/$sub_path"
+
+  echo "      Executando Comando no Projeto: $description..."
+  echo "         Em: $full_path"
+  echo "         Comando: $command_to_run"
+
+  if [[ ! -d "$full_path" ]]; then
+    echo "      ❌ Falha: Diretório do projeto '$full_path' não encontrado para executar comando."
+    # Incrementar falha global? Ou deixar o teste que chama decidir? Por ora, só retorna erro.
+    return 1
+  fi
+
+  pushd "$full_path" > /dev/null
+  eval "$command_to_run" # Usar eval para comandos com pipes ou redirecionamentos, se necessário
+  local exit_status=$?
+  popd > /dev/null
+
+  if [[ $exit_status -eq 0 ]]; then
+    echo "      ✅ Comando '$description' PASSOU (Exit Code: $exit_status)"
+    return 0
+  else
+    echo "      ❌ Comando '$description' FALHOU (Exit Code: $exit_status)"
+    # Incrementar falha global? Provavelmente o teste principal fará isso.
+    return 1
+  fi
+}
+
 _cleanup() {
   echo "\n🧹 Limpando diretório de teste base..."
   if [[ -d "$TEST_DIR_BASE" ]]; then
-      rm -rf "$TEST_DIR_BASE"
-      echo "   Removido $TEST_DIR_BASE"
+      local attempts=3
+      local delay=1
+      while [[ $attempts -gt 0 && -d "$TEST_DIR_BASE" ]]; do
+          rm -rf "$TEST_DIR_BASE"
+          if [[ $? -ne 0 && -d "$TEST_DIR_BASE" ]]; then # Se falhou e ainda existe
+              echo "   ⚠️ Falha ao remover $TEST_DIR_BASE (tentativa $((4-attempts))). Tentando novamente em ${delay}s..."
+              sleep $delay
+              attempts=$((attempts - 1))
+              delay=$((delay + 1)) # Opcional: aumentar o delay a cada tentativa
+          else
+              # Se rm bem-sucedido ou diretório desapareceu, sair do loop
+              break
+          fi
+      done
+
+      if [[ -d "$TEST_DIR_BASE" ]]; then
+           echo "   ❌ Falha final ao remover $TEST_DIR_BASE após múltiplas tentativas."
+           # Considerar incrementar failed_tests aqui também?
+      else
+           echo "   Removido $TEST_DIR_BASE com sucesso."
+      fi
+  else
+      echo "   Diretório base $TEST_DIR_BASE não encontrado para limpeza."
   fi
 }
 
@@ -215,6 +270,75 @@ test_copy_rules_with_force() {
   return $result
 }
 
+# --- Novo Teste para Next.js Refatorado ---
+test_refactored_nextjs_build_run() {
+  local project_name="test_nextjs_refactor"
+  local test_subdir="refactor/nextjs"
+  local project_path="$TEST_DIR_BASE/$test_subdir/$project_name"
+
+  _run_zsh_command "Refactor: Criar projeto Next.js (next-nest template)" "$test_subdir" "zuya create $project_name next-nest --force-rules"
+  local result=$?
+  if [[ $result -ne 0 ]]; then return 1; fi # Sair se a criação falhar
+
+  echo "   Verificações Pós-Criação (Refatorado Next.js):"
+  _verify_dir_exists "$project_path/frontend" "Refatorado Next.js (frontend dir)" || return 1
+
+  # Verificar arquivos de configuração chave (AC11.6.3)
+  echo "      Verificando arquivos de configuração..."
+  _verify_file_exists "$project_path/frontend/eslint.config.mjs" "Refatorado Next.js (eslint.config.mjs)" || return 1
+  _verify_file_exists "$project_path/frontend/jest.config.js" "Refatorado Next.js (jest.config.js)" || return 1
+  _verify_file_exists "$project_path/frontend/jest.setup.js" "Refatorado Next.js (jest.setup.js)" || return 1
+  _verify_file_exists "$project_path/frontend/tsconfig.json" "Refatorado Next.js (tsconfig.json)" || return 1
+
+  # Verificar build e run (AC11.6.4, AC11.6.5)
+  echo "      Verificando build e inicialização..."
+
+  # Instalar dependências (necessário antes do build)
+  _run_project_command "$project_path" "frontend" "npm install --quiet" "npm install no frontend" || return 1
+
+  # Tentar buildar o projeto (AC11.6.4)
+  _run_project_command "$project_path" "frontend" "npm run build" "npm run build no frontend" || return 1
+
+  # Tentar iniciar o servidor de desenvolvimento (AC11.6.5)
+  local dev_success=0
+  echo "      Executando Comando no Projeto: npm run dev (background check)..."
+  echo "         Em: $project_path/frontend"
+  pushd "$project_path/frontend" > /dev/null
+  npm run dev & # Executar em background
+  local dev_pid=$! # Capturar PID do processo em background
+  echo "         Comando 'npm run dev' iniciado em background (PID: $dev_pid). Aguardando 10s..."
+  sleep 10 # Dar tempo para o servidor iniciar ou falhar
+
+  # Verificar se o processo ainda está rodando
+  if kill -0 $dev_pid 2>/dev/null; then
+    echo "      ✅ Comando 'npm run dev' parece ter iniciado com sucesso (processo $dev_pid ainda ativo)."
+    echo "         Finalizando processo $dev_pid..."
+    kill $dev_pid # Matar o processo
+    wait $dev_pid 2>/dev/null # Limpar o processo
+    dev_success=1
+  else
+    echo "      ❌ Comando 'npm run dev' FALHOU (processo $dev_pid não encontrado após 10s)."
+    # O teste geral já falhou se chegou aqui? Depende se o comando npm run dev retornou erro imediatamente.
+    # Garantir que o teste falhe se dev_success não for 1.
+  fi
+  popd > /dev/null
+
+  if [[ $dev_success -eq 0 ]]; then
+      # Incrementar falha e decrementar sucesso se não o fez ainda
+      # A função _run_project_command não foi usada aqui, então precisamos ajustar manualmente
+      echo "   ❌ Teste 'npm run dev check' FALHOU."
+      failed_tests=$((failed_tests + 1))
+      # A contagem de sucesso do teste principal (_run_zsh_command) precisa ser ajustada se ele passou mas o dev falhou
+      # Isso fica complexo. Mais fácil só retornar 1 para indicar falha geral do teste.
+      return 1
+  fi
+
+
+  # Se chegou aqui sem retornar 1, o teste passou
+  echo "   ✅ Teste 'test_refactored_nextjs_build_run' CONCLUÍDO com sucesso."
+  return 0
+}
+
 # --- Teste de Erro ---
 test_create_duplicate_project() {
   local project_name="test_duplicate"
@@ -253,6 +377,7 @@ test_create_nest_mongo
 test_copy_rules_no_force
 test_copy_rules_with_force
 test_create_duplicate_project
+test_refactored_nextjs_build_run
 
 # --- Relatório Final ---
 

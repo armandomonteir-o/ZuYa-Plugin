@@ -322,29 +322,113 @@ setup_nextjs() {
 
   cd "$dir_name" || { echo "❌ Falha ao entrar no diretório '$dir_name' após criação."; return 1; }
 
-  # Configurar ESLint avançado
-  echo "📝 Configurando ESLint..."
-  cat > .eslintrc.json << 'EOL'
-{
-  "extends": [
-    "next/core-web-vitals",
-    "plugin:@typescript-eslint/recommended",
-    "prettier"
-  ],
-  "plugins": [
-    "@typescript-eslint"
-  ],
-  "parser": "@typescript-eslint/parser",
-  "rules": {
-    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
-    "@typescript-eslint/no-explicit-any": "warn"
-  }
-}
-EOL
+  # --- Configurar ESLint (Flat Config) ---
+  echo "📝 Configurando ESLint (Flat Config)..."
+  
+  # Garantir dependências ESLint essenciais
+  echo "   -> Verificando/Instalando typescript-eslint..."
+  npm install --save-dev typescript-eslint || { echo "❌ Falha ao instalar typescript-eslint."; cd ..; return 1; }
+  # Nota: eslint, eslint-config-next, plugins react devem vir com create-next-app --eslint
+  # Nota: eslint-config-prettier será tratada separadamente ou na instalação do prettier
+  
+  # Remover configuração antiga se existir (caso o CNA ainda a crie)
+  rm -f .eslintrc.json
+  
+  # Gerar eslint.config.mjs
+  cat > eslint.config.mjs << \EOF 
+// @ts-check
 
-  # Configurar Jest
+import eslint from '@eslint/js';
+import tseslint from 'typescript-eslint';
+import nextPlugin from '@next/eslint-plugin-next';
+import reactPlugin from 'eslint-plugin-react';
+import hooksPlugin from 'eslint-plugin-react-hooks';
+import jsxA11yPlugin from 'eslint-plugin-jsx-a11y';
+import eslintConfigPrettier from 'eslint-config-prettier'; // Importar para o final
+
+export default tseslint.config(
+  // Configs globais recomendadas do ESLint e TypeScript
+  eslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.stylisticTypeChecked,
+
+  // Configuração principal para arquivos TS/JS/JSX/TSX
+  {
+    files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        project: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+      globals: {
+        // Definir globals se necessário (ex: browser, node)
+        // Exemplo: ...globals.browser,
+      },
+    },
+    plugins: {
+      // Plugins são definidos aqui
+      // '@typescript-eslint': tseslint.plugin, // Já incluído via tseslint.config
+      'react': reactPlugin,
+      'react-hooks': hooksPlugin,
+      'jsx-a11y': jsxA11yPlugin,
+      '@next/next': nextPlugin,
+    },
+    rules: {
+      // Regras recomendadas do Next.js (vem do plugin)
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs['core-web-vitals'].rules,
+
+      // Regras recomendadas do React (verificar se necessário override)
+      ...reactPlugin.configs.recommended.rules,
+      // ...reactPlugin.configs['jsx-runtime'].rules, // Para React 17+
+
+      // Regras recomendadas do React Hooks
+      ...hooksPlugin.configs.recommended.rules,
+
+      // Regras recomendadas de Acessibilidade JSX
+      ...jsxA11yPlugin.configs.recommended.rules,
+
+      // Overrides e regras customizadas
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-explicit-any': 'warn',
+      // Desativar regras desnecessárias com TypeScript ou React 17+
+      'react/prop-types': 'off',
+      'react/react-in-jsx-scope': 'off',
+      
+      // Regras Type-Aware importantes (Exemplos)
+      // '@typescript-eslint/no-floating-promises': 'error',
+      // '@typescript-eslint/no-misused-promises': 'error',
+    },
+    settings: {
+      react: {
+        version: 'detect',
+      },
+    },
+  },
+
+  // Ignorar arquivos específicos
+  {
+    ignores: [
+      '.next/**/*',
+      'node_modules/**/*',
+      'dist/**/*',
+      // Adicionar outros ignores se necessário (ex: .DS_Store)
+    ],
+  },
+  
+  // Configuração do Prettier (ÚLTIMA para sobrescrever regras de estilo)
+  eslintConfigPrettier,
+);
+EOF
+
+  # --- Configurar Jest ---
   echo "🛠️  Instalando e configurando Jest..."
-  npm install --save-dev jest @testing-library/react @testing-library/jest-dom jest-environment-jsdom @typescript-eslint/parser || { echo "❌ Falha ao instalar dependências do Jest."; cd ..; return 1; }
+  # Substituir a linha abaixo:
+  # npm install --save-dev jest @testing-library/react @testing-library/jest-dom jest-environment-jsdom @typescript-eslint/parser || { echo "❌ Falha ao instalar dependências do Jest."; cd ..; return 1; }
+  # Pela seguinte lógica:
+  # Instalar dependências de teste (CNA geralmente instala jest/rtl, garantir @testing-library/jest-dom)
+  echo "🛠️  Verificando/Instalando dependências de teste (@testing-library/jest-dom)..."
+  npm install --save-dev @testing-library/jest-dom || { echo "❌ Falha ao instalar @testing-library/jest-dom."; cd ..; return 1; }
 
   cat > jest.config.js << 'EOL'
 const nextJest = require('next/jest');
@@ -363,7 +447,6 @@ const customJestConfig = {
     // Handle module aliases (this will be automatically configured for you soon)
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  preset: 'ts-jest', // Adicionado para melhor suporte a TS
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
