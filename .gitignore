@@ -1,0 +1,9 @@
+# Workflow Artifacts
+PROJECT_TASKS.json
+PROJECT_LEARNINGS.md
+INITIAL_GUIDE.md
+feedbacks.md
+cursor-prompts.txt
+
+# Cursor directory
+.cursor/
