@@ -1200,20 +1200,20 @@
       {
         "id": "AC16.0.1",
         "description": "Root cause of the overwrite failure is identified.",
-        "status": "To Do"
+        "status": "Obsolete"
       },
       {
         "id": "AC16.0.2",
         "description": "A reliable method to apply the ZuYa template to `src/app/page.tsx` is implemented in `setup_nextjs`.",
-        "status": "To Do"
+        "status": "Obsolete"
       },
       {
         "id": "AC16.0.3",
         "description": "Running `zuya create <name> next-nest` results in a project where `localhost:3000` (frontend) displays the ZuYa template page.",
-        "status": "To Do"
+        "status": "Obsolete"
       }
     ],
-    "status": "To Do",
+    "status": "Obsolete",
     "dependsOn": ["ZUYA-11"],
     "subTasks": [
       {
@@ -1227,17 +1227,17 @@
           {
             "id": "AC16.1.1",
             "description": "A causa específica da falha do cat > ... é identificada e documentada.",
-            "status": "To Do"
+            "status": "Obsolete"
           },
           {
             "id": "AC16.1.2",
             "description": "Possíveis soluções alternativas são consideradas.",
-            "status": "To Do"
+            "status": "Obsolete"
           }
         ],
-        "status": "To Do",
+        "status": "Obsolete",
         "dependsOn": [],
-        "completionNotes": ""
+        "completionNotes": "Tornada obsoleta pela abordagem de clonagem de template (ZUYA-18)."
       },
       {
         "id": "ZUYA-16.2",
@@ -1250,17 +1250,17 @@
           {
             "id": "AC16.2.1",
             "description": "O código na função setup_nextjs é modificado para usar o método de sobrescrita robusto.",
-            "status": "To Do"
+            "status": "Obsolete"
           },
           {
             "id": "AC16.2.2",
             "description": "A sintaxe do zuya.plugin.zsh é verificada (zsh -n zuya.plugin.zsh).",
-            "status": "To Do"
+            "status": "Obsolete"
           }
         ],
-        "status": "To Do",
+        "status": "Obsolete",
         "dependsOn": ["ZUYA-16.1"],
-        "completionNotes": ""
+        "completionNotes": "Tornada obsoleta pela abordagem de clonagem de template (ZUYA-18)."
       },
       {
         "id": "ZUYA-16.3",
@@ -1273,25 +1273,25 @@
           {
             "id": "AC16.3.1",
             "description": "A criação do projeto next-nest resulta no page.tsx correto.",
-            "status": "To Do"
+            "status": "Obsolete"
           },
           {
             "id": "AC16.3.2",
             "description": "npm run build no frontend do projeto criado é bem-sucedido.",
-            "status": "To Do"
+            "status": "Obsolete"
           },
           {
             "id": "AC16.3.3",
             "description": "(Opcional, mas recomendado) Teste automatizado em test_zuya.sh verifica o conteúdo do page.tsx.",
-            "status": "To Do"
+            "status": "Obsolete"
           }
         ],
-        "status": "To Do",
+        "status": "Obsolete",
         "dependsOn": ["ZUYA-16.2"],
-        "completionNotes": ""
+        "completionNotes": "Tornada obsoleta pela abordagem de clonagem de template (ZUYA-18)."
       }
     ],
-    "completionNotes": ""
+    "completionNotes": "Tornada obsoleta pela decisão de refatorar setup_nextjs para clonar um template pré-configurado em vez de modificar o resultado de create-next-app (ver ZUYA-18)."
   },
   {
     "id": "ZUYA-17",
@@ -1319,6 +1319,50 @@
     ],
     "status": "To Do",
     "dependsOn": [],
+    "subTasks": [],
+    "completionNotes": ""
+  },
+  {
+    "id": "ZUYA-18",
+    "taskType": "Feature",
+    "priority": "High",
+    "estimate": "L",
+    "summary": "Refatorar setup_nextjs para Clonar Template Pré-configurado",
+    "description": "Modificar a função `setup_nextjs` para, em vez de usar `npx create-next-app`, clonar um repositório Git de template pré-configurado (ex: `zuya-nextjs-template`). Este template já deve conter o layout visual desejado (substituindo o `page.tsx` padrão) e outras configurações base. A função deve clonar, renomear o diretório (se necessário), remover o histórico .git do template e instalar as dependências.",
+    "acceptanceCriteria": [
+      {
+        "id": "AC18.0.1",
+        "description": "Um repositório de template Next.js para ZuYa existe e está acessível (passo manual inicial ou tarefa separada).",
+        "status": "To Do"
+      },
+      {
+        "id": "AC18.0.2",
+        "description": "Função `setup_nextjs` usa `git clone` para buscar o template.",
+        "status": "To Do"
+      },
+      {
+        "id": "AC18.0.3",
+        "description": "Diretório clonado é corretamente posicionado (ex: `frontend/`).",
+        "status": "To Do"
+      },
+      {
+        "id": "AC18.0.4",
+        "description": "Histórico Git do template (`.git`) é removido após o clone.",
+        "status": "To Do"
+      },
+      {
+        "id": "AC18.0.5",
+        "description": "`npm install` (ou yarn) é executado com sucesso no diretório clonado.",
+        "status": "To Do"
+      },
+      {
+        "id": "AC18.0.6",
+        "description": "Executar `zuya create <nome> next-nest` resulta em um projeto funcional com o layout visual do template ZuYa.",
+        "status": "To Do"
+      }
+    ],
+    "status": "To Do",
+    "dependsOn": ["ZUYA-11"],
     "subTasks": [],
     "completionNotes": ""
   }
