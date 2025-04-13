@@ -316,7 +316,25 @@ setup_nextjs() {
   echo "🧹 Removendo histórico Git do template..."
   rm -rf .git || { echo "⚠️ Falha ao remover o diretório .git do template (pode não existir ou erro de permissão)."; }
 
-  # A instalação (ZUYA-18.5) virá na próxima subtarefa
+  # Instalar dependências
+  echo "📦 Instalando dependências do frontend..."
+  local install_cmd="npm install"
+  if [[ -f "yarn.lock" ]]; then
+    install_cmd="yarn install"
+    echo "   -> Detectado yarn.lock, usando yarn."
+  elif [[ -f "pnpm-lock.yaml" ]]; then
+    install_cmd="pnpm install"
+    echo "   -> Detectado pnpm-lock.yaml, usando pnpm."
+    # Verificar se pnpm está instalado
+    if ! command -v pnpm &> /dev/null; then
+      echo "   ⚠️ Aviso: pnpm não encontrado no PATH. Tentando instalar via npm..."
+      npm install -g pnpm || echo "   ❌ Falha ao instalar pnpm globalmente. A instalação de dependências pode falhar."
+    fi
+  else
+    echo "   -> Usando npm install como padrão."
+  fi
+
+  $install_cmd || { echo "❌ Falha ao executar '$install_cmd'."; cd ..; return 1; }
 
   echo "✅ Template Next.js clonado e limpo com sucesso em '$dir_name'."
   cd .. # Voltar para o diretório raiz do projeto para manter consistência
