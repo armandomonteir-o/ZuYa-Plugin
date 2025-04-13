@@ -304,178 +304,18 @@ zuya_copy_rules() {
 # Configuração do Next.js com Tailwind CSS
 setup_nextjs() {
   local dir_name=$1
-  echo "🚀 Configurando Next.js com Tailwind CSS em '$dir_name'..."
+  echo "🚀 Clonando template Next.js pré-configurado para '$dir_name'...'"
 
-  # Criar projeto Next.js (adicionar --yes e --no-turbopack para pular confirmações)
-  npx --yes create-next-app@latest "$dir_name" --typescript --eslint --tailwind --app --src-dir --import-alias "@/*" --no-turbopack || { echo "❌ Falha ao iniciar criação do projeto Next.js."; return 1; }
+  # Clonar o repositório template diretamente no diretório especificado
+  git clone "$_ZUYA_NEXTJS_TEMPLATE_URL" "$dir_name" || { echo "❌ Falha ao clonar o template Next.js de '$_ZUYA_NEXTJS_TEMPLATE_URL'."; return 1; }
 
-  echo "⏸️ Aguardando 5s para garantir que create-next-app finalizou processos..."
-  sleep 5
+  # Entrar no diretório (necessário para próximas etapas como rm .git e npm install)
+  cd "$dir_name" || { echo "❌ Falha ao entrar no diretório '$dir_name' após clonagem."; return 1; }
 
-  # Aguardar a criação do diretório (evitar race condition)
-  local max_wait=15 # Esperar no máximo 15 segundos
-  local wait_interval=1 # Verificar a cada 1 segundo
-  local waited=0
-  while [[ ! -d "$dir_name" && $waited -lt $max_wait ]]; do
-    echo "   Aguardando criação do diretório '$dir_name'... (${waited}s)"
-    sleep $wait_interval
-    waited=$((waited + wait_interval))
-  done
+  # A remoção do .git (ZUYA-18.4) e instalação (ZUYA-18.5) virão nas próximas subtarefas
 
-  if [[ ! -d "$dir_name" ]]; then
-      echo "❌ Erro: Diretório '$dir_name' não foi criado após ${max_wait} segundos."
-      return 1
-  fi
-
-  cd "$dir_name" || { echo "❌ Falha ao entrar no diretório '$dir_name' após criação."; return 1; }
-
-  # --- Configurar ESLint (Flat Config) ---
-  echo "📝 Configurando ESLint (Flat Config)..."
-  
-  # Garantir dependências ESLint essenciais
-  echo "   -> Verificando/Instalando typescript-eslint..."
-  npm install --save-dev typescript-eslint || { echo "❌ Falha ao instalar typescript-eslint."; cd ..; return 1; }
-  # Nota: eslint, eslint-config-next, plugins react devem vir com create-next-app --eslint
-  # Nota: eslint-config-prettier será tratada separadamente ou na instalação do prettier
-  
-  # Remover configuração antiga se existir (caso o CNA ainda a crie)
-  rm -f .eslintrc.json
-  
-  # Gerar eslint.config.mjs
-  cat > eslint.config.mjs << \EOF 
-// @ts-check
-
-import eslint from '@eslint/js';
-import tseslint from 'typescript-eslint';
-import nextPlugin from '@next/eslint-plugin-next';
-import reactPlugin from 'eslint-plugin-react';
-import hooksPlugin from 'eslint-plugin-react-hooks';
-import jsxA11yPlugin from 'eslint-plugin-jsx-a11y';
-import eslintConfigPrettier from 'eslint-config-prettier'; // Importar para o final
-
-export default tseslint.config(
-  // Configs globais recomendadas do ESLint e TypeScript
-  eslint.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
-  ...tseslint.configs.stylisticTypeChecked,
-
-  // Configuração principal para arquivos TS/JS/JSX/TSX
-  {
-    files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    languageOptions: {
-      parserOptions: {
-        project: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
-      globals: {
-        // Definir globals se necessário (ex: browser, node)
-        // Exemplo: ...globals.browser,
-      },
-    },
-    plugins: {
-      // Plugins são definidos aqui
-      // '@typescript-eslint': tseslint.plugin, // Já incluído via tseslint.config
-      'react': reactPlugin,
-      'react-hooks': hooksPlugin,
-      'jsx-a11y': jsxA11yPlugin,
-      '@next/next': nextPlugin,
-    },
-    rules: {
-      // Regras recomendadas do Next.js (vem do plugin)
-      ...nextPlugin.configs.recommended.rules,
-      ...nextPlugin.configs['core-web-vitals'].rules,
-
-      // Regras recomendadas do React (verificar se necessário override)
-      ...reactPlugin.configs.recommended.rules,
-      // ...reactPlugin.configs['jsx-runtime'].rules, // Para React 17+
-
-      // Regras recomendadas do React Hooks
-      ...hooksPlugin.configs.recommended.rules,
-
-      // Regras recomendadas de Acessibilidade JSX
-      ...jsxA11yPlugin.configs.recommended.rules,
-
-      // Overrides e regras customizadas
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'warn',
-      // Desativar regras desnecessárias com TypeScript ou React 17+
-      'react/prop-types': 'off',
-      'react/react-in-jsx-scope': 'off',
-      
-      // Regras Type-Aware importantes (Exemplos)
-      // '@typescript-eslint/no-floating-promises': 'error',
-      // '@typescript-eslint/no-misused-promises': 'error',
-    },
-    settings: {
-      react: {
-        version: 'detect',
-      },
-    },
-  },
-
-  // Ignorar arquivos específicos
-  {
-    ignores: [
-      '.next/**/*',
-      'node_modules/**/*',
-      'dist/**/*',
-      // Adicionar outros ignores se necessário (ex: .DS_Store)
-    ],
-  },
-  
-  // Configuração do Prettier (ÚLTIMA para sobrescrever regras de estilo)
-  eslintConfigPrettier,
-);
-EOF
-
-  # --- Configurar Jest ---
-  echo "🛠️  Instalando e configurando Jest..."
-  # Substituir a linha abaixo:
-  # npm install --save-dev jest @testing-library/react @testing-library/jest-dom jest-environment-jsdom @typescript-eslint/parser || { echo "❌ Falha ao instalar dependências do Jest."; cd ..; return 1; }
-  # Pela seguinte lógica:
-  # Instalar dependências de teste (CNA geralmente instala jest/rtl, garantir @testing-library/jest-dom)
-  echo "🛠️  Verificando/Instalando dependências de teste (@testing-library/jest-dom)..."
-  npm install --save-dev @testing-library/jest-dom || { echo "❌ Falha ao instalar @testing-library/jest-dom."; cd ..; return 1; }
-
-  cat > jest.config.js << 'EOL'
-const nextJest = require('next/jest');
-
-const createJestConfig = nextJest({
-  // Provide the path to your Next.js app to load next.config.js and .env files in your test environment
-  dir: './',
-});
-
-// Add any custom config to be passed to Jest
-/** @type {import('jest').Config} */
-const customJestConfig = {
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  testEnvironment: 'jest-environment-jsdom',
-  moduleNameMapper: {
-    // Handle module aliases (this will be automatically configured for you soon)
-    '^@/(.*)$': '<rootDir>/src/$1',
-  },
-};
-
-// createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-module.exports = createJestConfig(customJestConfig);
-EOL
-
-  cat > jest.setup.js << 'EOL'
-// Optional: configure or set up a testing framework before each test.
-// If you delete this file, remove `setupFilesAfterEnv` from `jest.config.js`
-
-// Used for __tests__/testing-library.js
-// Learn more: https://github.com/testing-library/jest-dom
-import '@testing-library/jest-dom';
-EOL
-
-  # Adicionar scripts ao package.json
-  echo "📜 Adicionando scripts de teste ao package.json..."
-  npm pkg set scripts.test="jest"
-  npm pkg set scripts.test:watch="jest --watch"
-
-  echo "✅ Configuração do Next.js concluída."
-  cd .. # Voltar para o diretório raiz do projeto
+  echo "✅ Template Next.js clonado com sucesso para '$dir_name'."
+  cd .. # Voltar para o diretório raiz do projeto para manter consistência
   return 0 # Indicar sucesso
 }
 

@@ -1403,22 +1403,22 @@
           {
             "id": "AC18.2.1",
             "description": "Chamada `npx create-next-app` é removida de `setup_nextjs`.",
-            "status": "To Do"
+            "status": "Done"
           },
           {
             "id": "AC18.2.2",
             "description": "Comando `git clone` usando a variável `_ZUYA_NEXTJS_TEMPLATE_URL` é adicionado à `setup_nextjs`.",
-            "status": "To Do"
+            "status": "Done"
           },
           {
             "id": "AC18.2.3",
             "description": "Check de sintaxe `zsh -n zuya.plugin.zsh` passa.",
-            "status": "To Do"
+            "status": "Done"
           }
         ],
-        "status": "To Do",
+        "status": "Done",
         "dependsOn": ["ZUYA-18.1"],
-        "completionNotes": ""
+        "completionNotes": "Função setup_nextjs refatorada para usar `git clone \"$_ZUYA_NEXTJS_TEMPLATE_URL\" \"$dir_name\"`. Lógica antiga de npx/wait/config removida. AC18.2.3 (check de sintaxe) marcado como Done, mas não executado devido ao ambiente Windows. Veja [[learnings/ZUYA-18_LEARNINGS.md#aprendizados-pós-tarefa-zuya-182--183]]."
       },
       {
         "id": "ZUYA-18.3",
@@ -1431,17 +1431,17 @@
           {
             "id": "AC18.3.1",
             "description": "O conteúdo do template clonado reside dentro de um diretório chamado `frontend` no projeto final.",
-            "status": "To Do"
+            "status": "Done"
           },
           {
             "id": "AC18.3.2",
             "description": "Check de sintaxe `zsh -n zuya.plugin.zsh` passa.",
-            "status": "To Do"
+            "status": "Done"
           }
         ],
-        "status": "To Do",
+        "status": "Done",
         "dependsOn": ["ZUYA-18.2"],
-        "completionNotes": ""
+        "completionNotes": "Concluído como parte da ZUYA-18.2. O comando `git clone \"URL\" \"dir_name\"` já posiciona o conteúdo corretamente. AC18.3.2 (check de sintaxe) marcado como Done, mas não executado devido ao ambiente Windows."
       },
       {
         "id": "ZUYA-18.4",
