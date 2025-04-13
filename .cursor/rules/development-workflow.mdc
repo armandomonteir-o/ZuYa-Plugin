@@ -1,0 +1,244 @@
+---
+description: Our standard collaborative workflow for initiating projects, breaking down tasks, implementing features, and fostering learning with Cursor. **Now includes iterative planning and enhanced artifact tracking.**
+globs: [] # Not file-specific
+alwaysApply: false
+---
+# Workflow: Collaborative Development with Cursor
+
+## 1. Description/Objective
+
+This document defines the standard process for initiating and executing development tasks for new projects or significant features using Cursor as an AI pair programmer. The workflow emphasizes structured planning, adherence to best practices (defined in other `.mdc` files), **iterative task breakdown**, continuous learning, and **enhanced documentation through enriched artifacts** (`PROJECT_TASKS.json`, `PROJECT_LEARNINGS.md`).
+
+## 2. Cross-References
+
+- **All Rules:** This workflow orchestrates the application of all other `.mdc` rules (e.g., `architecture.mdc`, `nestjs...`, `nextjs...`, `testing.mdc`, `git.mdc`, `ui.mdc`).
+- **Generated Artifacts:** This workflow creates/updates `INITIAL_GUIDE.md`, **`PROJECT_TASKS.json` (enhanced structure)**, **`learnings/[PARENT_TASK_ID]_LEARNINGS.md` (Portuguese, task-specific files in dedicated directory)**, and potentially modifies `README.md`.
+
+## 3. Workflow Steps
+
+### 3.1. Step 1: Initiation (You)
+
+1.  **Initiation (You):**
+
+    - Start with a clear description of the project idea. Example: "Cursor, I have an idea for Project X. The goal is to create [main objective]. Key features are [feature 1, feature 2], and the main technology will be [Next.js/NestJS/other]."
+    - Provide as much initial detail as possible about goals, target audience, main features, and the technology stack (if already defined).
+
+### 3.2. Step 2: Analysis, Initial Guide & Setup Discussion (Me - Cursor)
+
+2.  **Analysis, Initial Guide & Setup Discussion (Me - Cursor):**
+
+    - I will confirm my understanding of your idea and ask clarifying questions if necessary.
+    - **Key Initial Questions & Collection Methods:** I will gather initial project details. This can be done via:
+        - **Sequential Questions (Default):** Asking for Package Manager, UI Style (suggesting 2-3 options), Database, Docker usage, Diagram/ADR usage one by one.
+        - **Upfront Checklist/Template (Alternative):** Potentially providing a checklist or template within `INITIAL_GUIDE.md` (or separately) for you to fill in these initial choices more efficiently. Let me know if you prefer this approach.
+        - **Simultaneous Questions (Alternative):** Asking all key configuration questions in a single message.
+    - **Immediate Action (Post-Collection):** Once these initial points are clarified (regardless of the method used), I will **immediately generate the `INITIAL_GUIDE.md` file** summarizing these decisions, technologies, and references. (I will confirm file creation in the chat).
+    - **Next Steps in Analysis Phase:** Following the guide generation, I will proceed with:
+        - **Automatic README Update:** I will **automatically edit the existing `README.md` file** to reflect the project's specifics (e.g., updating `🎯 Objetivo`, `🚀 Tecnologias`, mentioning the chosen package manager). **(Note: I will apply these edits and inform you immediately, providing the changes. Please let me know if corrections are needed.)**
+        - **Discussing RFs and RNFs:** **Based on the project goal and initial discussion, we will explicitly identify and discuss key Functional Requirements (RFs) and Non-Functional Requirements (RNFs) like performance, security, usability, accessibility, etc. These will be noted in the `INITIAL_GUIDE.md`.**
+        - **Docker Planning:** Discussing the specifics for `Dockerfile`s and `docker-compose.yml`.
+          - **Common Considerations (based on project learnings):**
+            - Strategy for multi-stage builds (optimization, security).
+            - Importance and content of `.dockerignore`.
+            - `docker-compose.yml` setup for local development (port mapping, volume mounts for hot-reloading).
+            - Potential file permission issues between host and container (especially on Linux) and common solutions (e.g., `user` directive, environment variables).
+              - **Note:** Watch modes (like `nest start --watch`) might conflict with volume permissions when managing build artifacts (e.g., the `dist` folder). Using `user: "${UID}:${GID}"` is preferred but can be tricky. If persistent issues arise during DEV, using `user: root` might be a pragmatic temporary solution, ensuring the production setup remains non-root.
+            - Ensuring necessary dependencies and tools are available in the final image stage for development scripts (like `start:dev`).
+        - **Architectural Discussion:** Elaborating on the need/plan for Diagrams/ADRs decided earlier.
+    - **Important:** The Initial Guide and updated README will reference the relevant rules in `.cursor/rules/`.
+    - The guide may include suggestions for initial folder structure, key dependencies, etc.
+
+### 3.3. Step 3: Initial High-Level Task Breakdown & Task Structuring
+
+3.  **Initial High-Level Task Breakdown & Task Structuring (Me - Cursor):**
+
+    - Based on your idea and the initial guide (`INITIAL_GUIDE.md`), I will **break down the project into high-level tasks** (Epics/Features). **Sub-tasks will NOT be detailed at this stage.**
+    - **Inclusion of Architectural Tasks:** **Crucially, I will cross-reference the decisions made in Step 3.2 regarding architectural documentation (Diagrams, ADRs) and ensure that tasks for creating these artifacts are included in this initial high-level breakdown if they were deemed necessary.**
+    - **Learning Step:** Briefly discuss the overall testing strategy (Unit, Integration, E2E) relevant to the identified Features. **Reference `testing.mdc` for general guidelines.**
+    - **Automatic Task Structuring & File Creation:** Following the high-level breakdown, I will structure the identified **Features/Epics** into the **enhanced JSON format**.
+        - **Task ID Prefix:** **By default, IDs might use a generic prefix like `PROJ-`. However, we can define a project-specific prefix (e.g., `DMT-`, `APP-`) either based on our discussion in Step 3.2 or upon your request now. Let me know your preference.**
+        - **Automation:** I will **automatically create the `PROJECT_TASKS.json` file** containing this initial list of Features (using the chosen ID prefix). **Sub-tasks will be added later, iteratively.**
+        - **Chat Output Note:** The content of the generated `PROJECT_TASKS.json` (initially just Features) will be presented clearly within a Markdown code block in the chat.
+        - **Enhanced JSON Structure Example (Feature Level):**
+          ```json
+          [
+            {
+              "id": "PREFIX-1", // Changed: Uses a configurable prefix
+              "taskType": "Feature", // Or "Epic"
+              "priority": "High", // Added: High, Medium, Low
+              "estimate": "M",    // Added: S, M, L, XL or Points
+              "summary": "Implement user login functionality",
+              "description": "As a user...",
+              "acceptanceCriteria": [ // High-level criteria for the Feature
+                { "id": "AC1.0.1", "description": "User can register.", "status": "To Do" },
+                { "id": "AC1.0.2", "description": "User can log in.", "status": "To Do" }
+              ],
+              "status": "To Do", // To Do, In Progress, Done, Blocked
+              "dependsOn": [], // Added: Array of task/sub-task IDs
+              "subTasks": [], // Will be populated iteratively in Step 5 (now Step 4)
+              "completionNotes": "" // Notes on Feature completion
+            }
+            // ... more Features
+          ]
+          ```
+
+### 3.4. Step 4: Review, Planning, Sub-Task Detailing & Pre-Task Learning (You & Me)
+
+4.  **Review, Planning, Sub-Task Detailing & Pre-Task Learning (You & Me):**
+
+    - **Review:** You review the **generated `INITIAL_GUIDE.md`** and the initial **Feature list** in `PROJECT_TASKS.json`.
+    - **Planning:** We discuss the plan, **prioritize**, and **select the first Feature** (e.g., `PREFIX-1`) to work on.
+    - **Automatic Git Branch Creation (New Step):**
+        - **Based on feedback #27, once a Feature/Epic (e.g., `PREFIX-1`) is selected, I will propose and execute the command to create and switch to a dedicated Git feature branch.**
+        - **The branch name will follow the convention: `feat/[PARENT_TASK_ID]-[feature-summary-slugified]` (e.g., `feat/PREFIX-1-implement-user-login`).**
+        - **All subsequent sub-task detailing and implementation for this Feature will occur on this branch.**
+    - **Sub-Task Detailing (Iterative):**
+        - **Collaboratively**, we break down the **selected Feature** into smaller, actionable **sub-tasks** (now on the newly created feature branch).
+        - **Proactive Suggestions for "Setup":** **If the selected Feature is related to initial project setup (e.g., named "Setup", "Initialization"), I will proactively suggest common setup sub-tasks.** A recommended order is: Project Initialization (`npm init`/`yarn init`), basic script definition (`dev`, `start`, `test`), initial linting/formatting setup, Dockerfile creation, Docker Compose setup, **then Git initialization (`git init`) and `.dockerignore`/`.gitignore` generation.** This ensures the first commit includes the basic structure.
+        **Also ensure any suggested `.gitignore` file includes standard workflow artifacts like `PROJECT_TASKS.json`, `learnings/`, `INITIAL_GUIDE.md`, `feedbacks.md`, and `cursor-prompts.txt`.** These suggestions will be presented ready to be added to `PROJECT_TASKS.json`.
+        - For each sub-task (suggested or defined collaboratively), we define its `summary`, `description`, `priority`, `estimate`, `dependsOn`, and **detailed, granular `acceptanceCriteria`** (using the object format `{ "id": "AC1.1.1", "description": "...", "status": "To Do" }`).
+        - **Automation & Structure:** I will **update the `PROJECT_TASKS.json` file**, adding these detailed sub-task objects **directly into the `subTasks` array of the parent Feature object**, ensuring a clear hierarchical structure within the JSON.
+          ```json
+          // Example showing sub-task added within Feature PREFIX-1
+          {
+            "id": "PREFIX-1",
+            // ... other feature fields ...
+            "subTasks": [
+              {
+                "id": "PREFIX-1.1", // Sub-task ID convention
+                "taskType": "Sub-Task",
+                "priority": "High",
+                "estimate": "S",
+                "summary": "Create login form UI component",
+                "description": "...",
+                "acceptanceCriteria": [
+                   { "id": "AC1.1.1", "description": "Render email input.", "status": "To Do" },
+                   { "id": "AC1.1.2", "description": "Render password input.", "status": "To Do" }
+                ],
+                "status": "To Do",
+                "dependsOn": [],
+                "completionNotes": ""
+              }
+              // ... more sub-tasks for this feature added here ...
+            ],
+            "completionNotes": ""
+          }
+          ```
+    - **Automatic Task Selection & Proactive Transition:** **As soon as sub-tasks are detailed and the `PROJECT_TASKS.json` is updated, I will proactively identify the first logical sub-task** (based on dependencies/sequence). I will announce the selection (e.g., "Ok, sub-tarefas detalhadas. Iniciando o pré-aprendizado para a `PREFIX-1.1: Project Initialization`.") **and seamlessly transition *directly* into the Learning Step below for that sub-task**, without needing explicit confirmation to proceed.
+    - **Learning Step (Before starting the selected sub-task):**
+        - **AI Self-Correction Note:** Before proceeding with sub-task learning or proposing implementation actions, always cross-reference the task description with the available `.mdc` rules (listed in Section 2 or provided context) and explicitly mention relevant guidelines found. (Ref: `feedbacks.md` Sec 2, Item #8)
+        - **Guideline Identification & Review:** Based on the **automatically selected sub-task**, I identify and we review relevant `.mdc` guidelines **(e.g., `architecture.mdc` section on Docker, or a dedicated `docker-best-practices.mdc` if it exists)**. **Following this review, I will propose the *first* implementation action (Step 6) for your confirmation.**
+        - **Pre-Task Explanation:** Explain concepts/libraries/patterns relevant to the **sub-task**.
+        - **Specific Dockerfile Focus:** **If the sub-task involves creating or significantly modifying a `Dockerfile`, I will _proactively_ cover and discuss key best practices:**
+            - **Base Image Choice:** Evaluate options (e.g., `node:20-alpine` vs. specific environment images like `public.ecr.aws/lambda/nodejs:20`), considering trade-offs (size, target environment, included tools). **I will recommend a default based on context (e.g., official AWS image for Lambda) and justify it.**
+            - **Cache Optimization:** Explain layering strategy (copying `package.json`/`lock` before other code).
+            - **Production Dependencies:** Emphasize `--production` flags and frozen lockfiles during dependency installation (`RUN`).
+            - **Security (Non-Root User):** Strongly recommend creating and switching to a non-root user (`USER node`).
+            - **Multi-stage Builds:** Briefly mention their purpose for reducing final image size, even if not implemented initially.
+            - **CMD/ENTRYPOINT:** Discuss the appropriate form based on the application and target environment (e.g., direct node execution vs. handler for Lambda).
+        - **Alternative Approaches:** Discuss implementation alternatives for the **sub-task**, considering the points above if applicable.
+        - **Learning Log (`learnings/[PARENT_TASK_ID]_LEARNINGS.md` - Portuguese):**
+            - **Directory & File Naming:** Learnings will be logged in a file named after the **parent task ID** (e.g., `ZUYA-11_LEARNINGS.md`) located inside a **`learnings/` directory** at the project root. I will identify the parent task ID for the current sub-task.
+            - **Directory/File Creation:** I will **create the `learnings/` directory** if it doesn't exist. I will create the specific learning file if it doesn't exist.
+            - **Language:** Portuguese.
+            - **Content & Timestamp (Mandatory Robust Method):**
+                - **Timestamp Capture:** *Before* generating content, capture the current timestamp in a variable: `local CURRENT_TIMESTAMP=$(date +'%Y-%m-%d %H:%M:%S')`.
+                - **Content Generation:** Append content using **multiple `echo "..." >> "$learning_file"` commands**. For the timestamp line, use: `echo "_Data: $CURRENT_TIMESTAMP_" >> "$learning_file"`.
+                - **Rationale:** This avoids shell substitution issues with heredocs (`<< EOF`).
+                - Summarize pre-task learning points (guidelines, concepts, Docker, alternatives, decisions). Aim for rich content with snippets, links, rationale.
+            - **Structure:** Use clear sections (Diretrizes, Conceitos, **Pontos Chave Docker (se aplicável)**, Decisões, Perguntas). **Ensure the entry is enclosed within unique HTML comments: `<!-- LEARN-START: [SUB-TASK_ID] -->` and `<!-- LEARN-END: [SUB-TASK_ID] -->`.**
+            - **Tags:** Include descriptive tags (e.g., `[#decision:...]`, `[#pitfall:...]`, `[#tech:...]`).
+            - (I will confirm this action).
+
+### 3.5. Step 5: Task Implementation (You & Me - Optimized Flow)
+
+5.  **Task Implementation (You & Me - Optimized Flow):**
+
+    - **Optimized Execution Flow:** Based on the Learning Step (Step 4), I will propose the **first action** (e.g., command, file edit) for the selected sub-task. **Upon your confirmation, I will execute that first action immediately.** Then, I will automatically proceed to execute any subsequent planned actions *for the same sub-task* without requiring further individual confirmations. I will signal when all actions for the sub-task are complete, triggering the transition to Step 6.
+    - **Collaboration Points:** Collaboration remains key. We will discuss blockers or key design choices **before** you confirm the first action. For simpler, sequential actions within a sub-task (common in setup), this flow minimizes interruptions. Interaction for refactoring or deeper review occurs primarily in Step 6.
+    - **Lint/Format Compliance:** **Once linting (e.g., ESLint) and formatting (e.g., Prettier) configurations are established for the project, I will strive to generate new code and propose file edits that adhere to these defined rules. This aims to minimize the need for subsequent manual formatting or lint fixes.**
+    - **Test Implementation:** Write tests **concurrently** guided by the sub-task's `acceptanceCriteria`. Consult `testing.mdc`.
+    - **Git Practice:** Work on feature branches (`feat/PREFIX-X.Y-subtask-summary`), commit frequently following `git.mdc`.
+
+### 3.6. Step 6: Post-Task Review, Commit & Documentation (Me & You, initiated by Me - Cursor)
+
+6.  **Post-Task Review, Commit & Documentation (Me & You, initiated by Me - Cursor):**
+
+    - **Review & Verification:** **Upon completion of all actions for the sub-task in Step 5**, I will simulate a code review against guidelines and verify that all granular `acceptanceCriteria` are met (including running tests).
+    - **[ZuYa Project Specific] Automatic Syntax Check:** **For sub-tasks that modify `zuya.plugin.zsh`, I will automatically run `zsh -n zuya.plugin.zsh` as part of this verification step *without asking for confirmation* and report the outcome.**
+    - **Formatting Check (Post-AI Edit):** **Dado que as ferramentas de edição automática podem ocasionalmente introduzir inconsistências de formatação (veja `[#tool-feedback]` #15 em `feedbacks.md`), é prudente executar o formatador do projeto (e.g., `yarn format`) após edições significativas feitas por mim, especialmente em arquivos de configuração, para garantir a consistência.**
+    - **Direct Documentation & Commit Proposal:** **Once verified, I will directly proceed with the documentation updates:**
+        - **Update `PROJECT_TASKS.json`:**
+            - Set the corresponding **sub-task** object's `status` to `"Done"`.
+            - Update the `status` of each `acceptanceCriteria` object within the sub-task to `"Done"`.
+            - Add rich `completionNotes` (outcome, test confirmation, links to the specific learning file, commits: e.g., "Login form UI created. Tests passed. Veja [[PREFIX-1_LEARNINGS.md#aprendizados-pós-tarefa-para-prefix-11]]. Commit: a1b2c3d"). **Include a note like `Ajuste Pendente: [descrição] [Ref: PREFIX-Y.Z]` if any follow-up is needed in a future task.**
+            - Update parent Feature status if all its sub-tasks are Done.
+        - **Update `learnings/[PARENT_TASK_ID]_LEARNINGS.md` (Portuguese):**
+            - **Directory/File Identification:** I will identify the correct parent task learning file (e.g., `learnings/ZUYA-11_LEARNINGS.md`) based on the current sub-task.
+            - **Content & Timestamp (Mandatory Robust Method):**
+                - **Timestamp Capture:** *Before* generating content, capture the current timestamp: `local CURRENT_TIMESTAMP=$(date +'%Y-%m-%d %H:%M:%S')`.
+                - **Content Generation:** Append content using **multiple `echo "..." >> "$learning_file"` commands**. For the timestamp line, use: `echo "_Data: $CURRENT_TIMESTAMP_" >> "$learning_file"`.
+                - Append a detailed post-task summary (implementation, testing, challenges, solutions, rationale, snippets, links, questions, insights). Explicitly mention pending adjustments.
+            - **Structure:** Use clear sub-sections (Resumo da Implementação, Abordagem de Testes, Desafios/Soluções, Pontos Chave, Perguntas em Aberto, Insights/Tags). **Ensure the post-task summary is added *within* the existing `<!-- LEARN-START: [SUB-TASK_ID] -->` / `<!-- LEARN-END: [SUB-TASK_ID] -->` block.**
+            - **Tags:** Use descriptive tags (`[#workaround:...]`, `[#question:...]`, `[#setup-concluido]`, `[#mdc-update-suggestion]`, `[#cursor-bug]`).
+        - **Feature Completion Check (If last sub-task):** **If this was the final sub-task for a Feature, perform a quick review of the Feature's overall status in `PROJECT_TASKS.json` and the collective learnings in the corresponding `learnings/[PARENT_TASK_ID]_LEARNINGS.md` file to ensure completeness before marking the Feature Done.**
+        - **Mandatory Post-Feature Manual Check (If last sub-task):** **Crucially, if this was the final sub-task for the Feature, perform a basic manual verification to ensure the feature works minimally as expected.** (e.g., For initial setup: run `yarn build` and try starting the application `node dist/index.js`; For other features: perform a key user flow). **Document the outcome briefly in the Feature's `completionNotes`.**
+        - **Feature Functional Review (If last sub-task):** **Following the manual check, explicitly evaluate if the implemented functionality meets the Feature's main goal robustly. Determine if immediate refinement (e.g., non-critical bugs, UX improvements, accuracy adjustments) is necessary before starting the next Feature. Record this assessment in the parent Feature's `completionNotes`.**
+        - **Commit Proposal:** After documenting, I will propose the final commit message following `git.mdc` and **excluding workflow artifacts like .mdc, learnings/*.md, feedbacks.md, PROJECT_TASKS.json**. (Updated based on Feedback #26)
+    - **Learning Step (Post-Documentation):** Suggest refactoring or ask reinforcing questions based on the completed work and documented learnings.
+    - **Feedback & Rule Update Reflection (Crucial):**
+        - **Your Input (Workflow/MDC):** This is a key moment for you to provide feedback on the workflow itself or suggest improvements to any `.mdc` rule based on the completed **sub-task**.
+        - **My Action:**
+            - **Differentiating Feedback:** It's important to distinguish between:
+                - *Project-Specific Learnings/Decisions:* These belong in the relevant `learnings/[PARENT_TASK_ID]_LEARNINGS.md` file.
+                - *General Suggestions for Standard `.mdc` Rules:* These are candidates for `feedbacks.md`.
+            - **Handling `.mdc` Suggestions:**
+                - **General Suggestions:** If the suggestion is a general improvement for the standard `.mdc` file (not critically needed *now*), I will only register it in `feedbacks.md` for your later review and update of the template repository.
+                - **Immediately Applicable Standard Improvements (Requires Your Confirmation):** If we identify an improvement that enhances the standard `.mdc` rule *and* is beneficial to apply immediately in *this* project:
+                    1.  **With your confirmation**, I will **edit the relevant `.mdc` file directly within this project's `./.cursor/rules/` directory**, applying the **specific** solution needed for the current context.
+                    2.  I will also **register an entry in `feedbacks.md`** describing the problem and the solution principle in a **generic** way, suitable for updating your master templates later.
+        - **Your Input (Tool Issues):** If you encountered issues with Cursor or other tools during the sub-task, please describe them now.
+        - **My Action (Tool Issues):**
+            - **Register in `feedbacks.md`:** I will create a detailed entry in `feedbacks.md` using the tag `[#cursor-bug]` (or `#tool-issue`) following the template:
+                - `[#cursor-bug] Resumo Curto do Problema`
+                - `Contexto:` Sub-task ID, Workflow Step.
+                - `Descrição Detalhada:` Ocorrido vs. Esperado.
+                - `Solução/Contorno Aplicado:` Como resolvemos.
+                - `Sugestão de Correção/Melhoria (Cursor/Workflow/MDC):` **Crucial:** Indicar onde a solução deve ser aplicada (ferramenta, workflow, regra). If rule-related, add `[#mdc-update-suggestion]` tag too.
+            - **Summarize in `learnings/[PARENT_TASK_ID]_LEARNINGS.md`:** I will add a brief note under a \"Desafios com Ferramentas/Cursor\" sub-section within the current sub-task's learning block (inside `<!-- LEARN-START/END -->`), referencing the detailed `feedbacks.md` entry (e.g., \"Problema X contornado, veja `[#cursor-bug]...` em `feedbacks.md`.\").
+        - **Trigger:** Use the trigger `(feedback-done)` to signal the end of this reflection/feedback phase before moving to the next iteration.
+
+### 3.7. Step 7: Iteration (with Limited Auto-Chaining)
+
+7.  **Iteration (with Limited Auto-Chaining):**
+    - Once step 6 is fully complete for a sub-task (including potential rule updates), the default behavior is to **automatically identify and start Step 4 for the *next* sub-task within the same Feature** that is listed sequentially in the `PROJECT_TASKS.json` (assuming dependencies allow).
+    - **Limit (N=1):** This automatic chaining happens **only once**. After automatically starting *one* subsequent sub-task via this mechanism, the flow reverts to the standard process, requiring explicit confirmation before initiating the *next* sub-task or Feature.
+    - If there are no more sub-tasks in the current Feature, or if the auto-chaining limit (N=1) has been reached, we will explicitly select the next Feature or sub-task together as described in Step 4.
+
+## 4. Referenced Artifacts
+
+We will always consult the relevant documents (and others as added) during development:
+
+- `INITIAL_GUIDE.md` (Generated in Step 3.2)
+- `PROJECT_TASKS.json` (**Enhanced Structure**, Generated in Step 3.3, Updated Iteratively in Steps 3.4 & 3.6)
+- `learnings/[PARENT_TASK_ID]_LEARNINGS.md` (**Portuguese, Task-Specific Files in dedicated directory**, Generated/Updated Iteratively in Steps 3.4 & 3.6)
+- `.cursor/rules/*.mdc` (All guideline files as referenced)
+- `README.md` (Updated in Step 3.2)
+
+## 5. Collaboration Notes
+
+- This is an iterative process. Feel free to provide feedback and request adjustments at any stage.
+- Clarity in the initial communication is crucial for good planning.
+- **Communicate Blockers:** Please let me know if you encounter any difficulties or uncertainties during the process.
+- **Output Formatting:** I will strive to format my responses clearly, using Markdown code blocks (```) for code snippets, file content, and JSON data to prevent formatting issues in the chat interface. Direct file modifications will primarily occur via dedicated tool actions, not large code blocks in chat responses.
+- **Timestamp Accuracy:** **Ensuring accurate dates and times in generated artifacts (`INITIAL_GUIDE.md`, `PROJECT_TASKS.json`, `PROJECT_LEARNINGS.md`, commit messages, etc.) is important for tracking. I will strive for accuracy, potentially verifying with system time (`date`) or requesting confirmation if unsure.**
+
+## 6. Related Zsh Commands
+
+*(Commands relevant to progressing through the workflow stages)*
+
+- **Setup/Initialization (Potentially in Step 3.2/3.5):**
+  - `yarn create next-app ...` / `nest new ...`
+  - `docker-compose up -d --build` (`dcud` alias)
+- **Implementation (Step 3.5):**
+  - `yarn dev` / `yarn start:dev` (or `yd`, `

@@ -1,0 +1,161 @@
+---
+description: Centralized best practices for creating efficient, secure, and maintainable Dockerfiles and managing Docker environments.
+globs: ["**/Dockerfile*", "**/*.dockerfile", "**/docker-compose*.yml"]
+---
+# Docker Best Practices
+
+This document outlines best practices for working with Docker, particularly focusing on creating effective `Dockerfile`s. Refer to this guide during Step 3.2 (Docker Planning) and Step 3.5 (Learning Step for Dockerfile tasks) of the main workflow.
+
+## 1. Base Image Selection
+
+- **Prioritize Official Images:** Whenever possible, start with official images for your language/framework (e.g., `node`, `python`).
+- **Use Specific Tags:** Avoid using `latest`. Prefer specific version tags (e.g., `node:20`, `python:3.11`) or specific variants like `node:20-alpine` for smaller images.
+- **Consider Environment-Specific Images:** For platforms like AWS Lambda, use the official base images provided by the vendor (e.g., `public.ecr.aws/lambda/nodejs:20`) as they include necessary runtime components (like the Runtime Interface Client - RIC).
+   - **Note for Lambda:** Using the official AWS Lambda base image is highly recommended as it bundles the AWS Lambda Runtime Interface Client (RIC), which is required to communicate with the Lambda service.
+- **Alpine Variants:** Alpine-based images (`-alpine`) are significantly smaller but use `musl libc` instead of `glibc`, which can cause compatibility issues with some compiled dependencies. Test thoroughly.
+- **Recommendation:** Start with a specific version tag of the official image (e.g., `node:20`). For specific environments like Lambda, use the vendor-provided image. Use `-alpine` variants cautiously.
+
+## 2. Optimize Build Cache & Context
+
+- **Structure `COPY` Instructions:** Copy only what's needed for the next step. Copy `package.json` and `yarn.lock`/`package-lock.json` first, run `install`, *then* copy the rest of your source code. This utilizes the build cache effectively.
+  ```dockerfile
+  WORKDIR /app
+  COPY package.json yarn.lock ./
+  RUN yarn install --production --frozen-lockfile
+  COPY . .
+  ```
+- **Use `.dockerignore`:** Prevent unnecessary files and secrets from being sent to the Docker daemon and included in the image context. Include `node_modules`, `.git`, `.env`, `Dockerfile` itself, etc.
+
+## 3. Dependency Management
+
+- **Production Dependencies Only:** In your final stage/image, install only production dependencies (`--production` for npm/yarn, or equivalent).
+- **Lockfiles:** Always use lockfiles (`package-lock.json`, `yarn.lock`, `poetry.lock`, etc.) and install using commands that respect them (`npm ci`, `yarn install --frozen-lockfile`, `poetry install --no-dev`) for reproducible builds.
+
+## 4. Security: Run as Non-Root User
+
+- **Avoid Root:** Running containers as root is a security risk. Create a dedicated non-root user in the `Dockerfile` and switch to it.
+   - **Note for Lambda:** Official AWS Lambda base images (like `aws/lambda/nodejs`) typically run as a predefined non-root user by default (e.g., `node`). Explicit user creation might not be necessary unless you have specific permission requirements. Always verify the base image's default user.
+  ```dockerfile
+  # Create a non-root user and group (Example if NOT using Lambda base image or needing custom user)
+  RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+  # ... (copy files, install deps)
+
+  # Set ownership (if necessary, depends on what needs access)
+  # RUN chown -R appuser:appgroup /app
+
+  # Switch to the non-root user
+  USER appuser
+
+  # Define CMD or ENTRYPOINT
+  CMD [ "node", "src/index.js" ]
+  ```
+
+## 5. Multi-Stage Builds
+
+- **Purpose:** Use multi-stage builds to separate the build environment (with build tools, dev dependencies) from the final runtime environment (with only the application and production dependencies). This significantly reduces the final image size and improves security.
+- **Example Structure (Node.js - Generic & Lambda Variant):**
+  ```dockerfile
+  # === Build Stage ===
+  # Use a Node.js version matching your Lambda runtime
+  FROM node:20 AS builder
+  WORKDIR /app
+  # Copy package files and install ALL dependencies (incl. devDeps for build)
+  COPY package.json yarn.lock ./
+  RUN yarn install
+  # Copy the rest of the source code
+  COPY . .
+  # Run your build process (e.g., tsc, webpack)
+  RUN yarn build # Or your specific build command
+
+  # === Final Stage (AWS Lambda Example) ===
+  # Use the official AWS Lambda base image matching the Node.js version
+  FROM public.ecr.aws/lambda/nodejs:20
+
+  # Set the working directory inside the Lambda image
+  # Often /var/task, but check the base image documentation if needed
+  WORKDIR /var/task
+
+  # Copy package.json and lockfile from the source (or builder stage if needed)
+  COPY package.json yarn.lock ./
+  # Install ONLY production dependencies
+  RUN yarn install --production --frozen-lockfile
+
+  # Copy the built application code from the builder stage
+  # Adjust source path (/app/dist) if your build output is different
+  COPY --from=builder /app/dist ./
+
+  # The base image's ENTRYPOINT handles the Lambda Runtime Interface Client (RIC).
+  # You only need to provide the CMD pointing to your handler.
+  # Format: <filename_without_extension>.<handler_function_name>
+  # Example assumes your compiled handler is in './lambda-handler.js'
+  # and the exported function is named 'handler'.
+  CMD [ "lambda-handler.handler" ]
+  ```
+
+## 6. CMD vs. ENTRYPOINT
+
+- **`CMD`:** Provides default arguments for an executing container. Can be easily overridden when running `docker run`. Use for the primary command the container should run.
+- **`ENTRYPOINT`:** Configures a container that will run as an executable. Arguments passed to `docker run` are appended to the `ENTRYPOINT`. Use when you want the container to behave like a specific command.
+- **Common Pattern:** Use `ENTRYPOINT` to set the main executable (e.g., `node`) and `CMD` to provide the default argument (e.g., `src/index.js`).
+   - **Note for Lambda:** Official AWS Lambda base images already include an `ENTRYPOINT` script that manages the Runtime Interface Client (RIC). You typically only need to specify the `CMD` pointing to your function handler (e.g., `filename.handlerFunctionName`). Overriding the `ENTRYPOINT` is usually not recommended unless you have very specific needs.
+  ```dockerfile
+  # Generic Example (NOT for Lambda base image)
+  ENTRYPOINT [ "node" ]
+  CMD [ "src/index.js" ]
+
+  # Lambda Example (using base image)
+  # ENTRYPOINT is handled by the base image
+  CMD [ "dist/lambda-handler.handler" ]
+  ```
+
+## 7. Example: `docker-compose.yml` for Local Lambda Development/Testing (with RIE)
+
+- **Purpose:** To simulate the Lambda environment locally for development and testing using the official [AWS Lambda Runtime Interface Emulator (RIE)](https://github.com/aws/aws-lambda-runtime-interface-emulator).
+- **How it Works:** The `docker-compose.yml` builds your Lambda function using the `Dockerfile` (like the one above) and runs it with the RIE. The RIE exposes a local HTTP endpoint (e.g., on port 9000) that mimics the Lambda invocation API.
+- **Example `docker-compose.yml`:**
+  ```yaml
+  version: '3.8'
+  services:
+    lambda-app:
+      # Build the image using the Dockerfile in the current directory (.)
+      build: .
+      # Mount your source code directory into the container for potential hot-reloading
+      # (Requires your app/Dockerfile setup to support it, e.g., nodemon/watch mode)
+      # Adjust './src' to your actual source code path if different.
+      # Use ':delegated' for better performance on macOS/Windows if needed.
+      volumes:
+        - ./src:/var/task/src:delegated
+      # Expose the port the RIE will listen on inside the container (9000)
+      # and map it to a port on your host machine (e.g., 9000).
+      ports:
+        - "9000:8080" # Standard RIE port inside is 8080
+      # Environment variables needed by the RIE or your function
+      environment:
+        # AWS_LAMBDA_RUNTIME_API is used internally by RIE, set to host:port
+        AWS_LAMBDA_RUNTIME_API: localhost:9000
+        # Add any other environment variables your function needs
+        # MY_VARIABLE: my_value
+      # Optional: Define healthcheck if needed
+      # healthcheck:
+      #   test: ["CMD", "curl", "-f", "http://localhost:8080/2015-03-31/functions/function/invocations"]
+      #   interval: 5s
+      #   timeout: 2s
+      #   retries: 12
+
+  # No external networks/volumes needed for this simple example
+  ```
+- **Running & Testing:**
+  1.  Run `docker-compose up --build` (or `dcud` alias).
+  2.  Wait for the container to start and the RIE to be ready.
+  3.  Send test events using `curl` to the host port mapped in `docker-compose.yml` (port 9000 in the example). The endpoint path is `/2015-03-31/functions/function/invocations`.
+      ```bash
+      # Example: Sending a simple JSON payload for a LaunchRequest
+      curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" -d '{}'
+      ```
+      *(See `development-workflow.mdc` Section 7.1 for tips on using shell scripts for more complex `curl` commands).*
+
+## 8. Further Reading & Resources
+
+- [Docker Documentation: Best practices for writing Dockerfiles](mdc:https:/docs.docker.com/develop/develop-images/dockerfile_best-practices)
+- [Docker Security Cheat Sheet (OWASP)](mdc:https:/cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html) 

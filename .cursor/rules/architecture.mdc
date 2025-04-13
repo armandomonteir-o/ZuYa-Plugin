@@ -1,0 +1,161 @@
+---
+description: General software architecture principles (SOLID, KISS, DRY), design considerations (scalability, security), common patterns, and specific project conventions (Docker, Communication).
+globs: Dockerfile, docker-compose.yml
+---
+# Software Architecture & Project Conventions
+
+## 1. Description/Objective
+
+This document outlines general software architecture principles (SOLID, KISS, DRY), key design considerations (scalability, security), common architectural patterns, and specific technical conventions adopted in this project, particularly regarding containerization with Docker and frontend-backend communication.
+
+## 2. Cross-References
+
+- **Specific Implementation (Backend):** See `nestjs-typescript-best-practices.mdc` for how these principles apply to NestJS.
+- **Specific Implementation (Frontend):** See `typescript-nextjs-tailwind-best-practices.mdc` for how these principles apply to Next.js.
+- **Testing:** See `testing.mdc` for testing approaches related to architecture.
+- **Workflow:** See `development-workflow.mdc` for how architectural decisions are made and documented (e.g., ADRs).
+
+## 3. Core Principles
+
+- **KISS (Keep It Simple, Stupid):** Prioritize simplicity in design. Avoid unnecessary complexity. Simple solutions are easier to understand, maintain, and debug.
+- **DRY (Don't Repeat Yourself):** Avoid duplication of code and logic. Abstract common functionalities into reusable components, functions, or services.
+- **YAGNI (You Ain't Gonna Need It):** Avoid implementing features or complexities until they are actually required. Focus on delivering the necessary functionality first.
+- **Separation of Concerns (SoC):** Divide the application into distinct sections, each addressing a specific concern (e.g., presentation, business logic, data access). This improves modularity and maintainability.
+- **Single Responsibility Principle (SRP):** (From SOLID) A class or module should have only one reason to change, meaning it should have only one job or responsibility.
+- **Open/Closed Principle (OCP):** (From SOLID) Software entities (classes, modules, functions) should be open for extension but closed for modification.
+- **Liskov Substitution Principle (LSP):** (From SOLID) Subtypes must be substitutable for their base types without altering the correctness of the program.
+- **Interface Segregation Principle (ISP):** (From SOLID) Clients should not be forced to depend on interfaces they do not use. Create smaller, specific interfaces rather than large, general-purpose ones.
+- **Dependency Inversion Principle (DIP):** (From SOLID) High-level modules should not depend on low-level modules. Both should depend on abstractions (e.g., interfaces). Abstractions should not depend on details; details should depend on abstractions.
+
+## 4. Design Considerations
+
+- **Modularity:** Design the system as a collection of loosely coupled, highly cohesive modules. Modules should be independent and interact through well-defined interfaces.
+- **Scalability:** Design the system to handle growth (increased load, data volume, complexity) efficiently. Consider horizontal scaling (adding more machines) and vertical scaling (increasing resources on existing machines).
+- **Performance:** Consider performance implications early. Optimize critical paths, use caching effectively, and choose appropriate data structures and algorithms.
+- **Security:** Design security in from the start (Security by Design). Address authentication, authorization, input validation, data protection, and common vulnerabilities (e.g., OWASP Top 10).
+- **Maintainability:** Design for ease of understanding, modification, and debugging. Use clear naming, consistent patterns, good documentation, and automated tests.
+- **Testability:** Design components and modules to be easily testable in isolation (unit testing) and in integration.
+- **Observability:** Design the system to be observable. Implement logging, metrics, and tracing to understand the system's behavior in production.
+
+## 5. Architectural Patterns
+
+*(Consider these patterns based on project needs. Refer to specific best practice guides like NestJS/Next.js for framework-specific implementations.)*
+
+- **Layered Architecture:** Organizes code into horizontal layers (e.g., Presentation, Business Logic, Persistence, Database). Common for traditional applications.
+- **Microservices Architecture:** Structures an application as a collection of small, independent, and loosely coupled services. Each service focuses on a specific business capability.
+    - **Pros:** Scalability, technology diversity, independent deployments, fault isolation.
+    - **Cons:** Distributed system complexity, operational overhead, eventual consistency challenges.
+- **Monolithic Architecture:** Builds the application as a single, unified unit. Simpler to develop and deploy initially.
+    - **Pros:** Simplicity (initially), easier debugging/testing within the unit, shared codebase.
+    - **Cons:** Can become tightly coupled, harder to scale specific parts, deployment affects the entire application.
+- **Event-Driven Architecture (EDA):** Components communicate asynchronously via events. Promotes loose coupling and scalability.
+- **API Design (REST, GraphQL, gRPC):** Choose and design APIs carefully based on consumer needs, performance requirements, and data patterns.
+    - **REST:** Resource-based, stateless, uses standard HTTP methods.
+    - **GraphQL:** Query language for APIs, allows clients to request exactly the data they need.
+    - **gRPC:** High-performance RPC framework, often uses Protocol Buffers.
+
+## 6. Decision Making
+
+- **Context Matters:** There is no single "best" architecture. Choose principles and patterns based on the specific requirements, constraints, team expertise, and long-term goals of the project.
+- **Document Decisions:** Record significant architectural decisions and their rationale (e.g., using Architecture Decision Records - ADRs).
+- **Iterate:** Architecture is not static. Be prepared to evolve the architecture as the system grows and requirements change, but avoid premature optimization or over-engineering.
+
+## 7. Specific Project Conventions
+
+### 7.1 Communication: Frontend <-> Backend
+
+*(Note: This section seems specific to a previous project using AWS Lambda. Review and update/remove if not applicable to the current project.)*
+
+- **Mechanism:** In this project, the primary communication between the frontend (Next.js) and the backend (Lambda function/API) is handled via **AWS Lambda Function URLs**.
+- **API Endpoints:** The backend exposes a RESTful API with specific endpoints (e.g., `/summary`, `/history`, `/events`) defined in the Lambda handlers (see `packages/alexa-skill/src/api`).
+- **Frontend Configuration:**
+    - The frontend needs to know the base URL of the deployed Lambda Function URL.
+    - This URL **must** be configured via the `API_BASE_URL` environment variable in the frontend's `.env.local` (or other relevant `.env` file for different environments).
+    - **Example (`packages/frontend/.env.local`):**
+      ```
+      API_BASE_URL=YOUR_LAMBDA_FUNCTION_URL_HERE
+      ```
+    - Fetch requests in the frontend should use this base URL.
+- **CORS:** The Lambda handlers responsible for the API endpoints **must** be configured to return appropriate CORS headers (e.g., `Access-Control-Allow-Origin`, `Access-Control-Allow-Methods`, `Access-Control-Allow-Headers`) to allow requests from the frontend's domain.
+
+### 7.2 Containerization with Docker (Monorepo - Yarn Workspaces)
+
+**For comprehensive best practices and examples for Dockerfiles and Docker Compose, please refer to the dedicated guide: `.cursor/rules/docker-best-practices.mdc`.** This section highlights specific considerations for monorepos.
+
+Containerizing applications in a monorepo (especially with Yarn Workspaces) presents specific challenges related to build context, dependency management, and image optimization.
+
+- **Build Context:**
+  - **Option 1: Context in Package (e.g., `packages/alexa-skill`)**: Simpler initially, but copying files from the root (like `yarn.lock` or the root `package.json`) using `../..` can be unstable or fail in some Docker environments (`failed to calculate checksum ... not found`).
+  - **Option 2: Context in Root (`.`):** A more robust and common approach for monorepos. Requires adjusting `COPY` paths within the Dockerfile to be relative to the root (e.g., `COPY packages/alexa-skill/src ./packages/alexa-skill/src`).
+
+- **Dependency Management (Root Context):**
+  - **`yarn install`:** For `yarn install` in the container's root to work correctly with workspaces, it's crucial to copy **all** relevant `package.json` files (root and *all* workspaces) to their respective locations within the container *before* running `yarn install`.
+    ```dockerfile
+    WORKDIR /app
+    # Copy root and workspace manifests
+    COPY package.json yarn.lock ./
+    COPY packages/workspace-a/package.json ./packages/workspace-a/
+    COPY packages/workspace-b/package.json ./packages/workspace-b/
+    # Install ALL dependencies
+    RUN yarn install --frozen-lockfile
+    ```
+  - **Production Dependencies:** The command `RUN yarn install --production --frozen-lockfile` in the root (in the production stage) generally works well to install only the production dependencies of all workspaces.
+
+- **Code Building (TypeScript):**
+  - **Option 1: Build inside Docker:**
+    - Requires a `builder` stage with a full Node.js environment and all devDependencies.
+    - Can encounter module resolution issues if `yarn install` doesn't create the `node_modules` structure exactly as expected by `tsc`.
+    - **Example (Root Context):**
+      ```dockerfile
+      # (After yarn install and COPYing the skill's source code)
+      WORKDIR /app/packages/alexa-skill # Change to the package directory
+      RUN yarn build # Execute the package-specific build
+      ```
+  - **Option 2: Build Locally (Recommended for Simplicity):**
+    - Run `yarn workspace <pkg> build` locally *before* building the Docker image.
+    - The Dockerfile simplifies to a single production stage.
+    - Copy only manifests, install production dependencies, and copy the pre-compiled `dist` folder from the host into the container.
+      ```dockerfile
+      # Single Stage: Production
+      FROM node:20-slim
+      WORKDIR /app
+      # Copy manifests...
+      COPY package.json yarn.lock ./
+      COPY packages/workspace-a/package.json ./packages/workspace-a/
+      # Install production deps...
+      RUN yarn install --production --frozen-lockfile
+      # Copy the pre-compiled dist folder
+      COPY packages/workspace-a/dist ./packages/workspace-a/dist
+      WORKDIR /app/packages/workspace-a
+      USER node
+      CMD ["yarn", "start"]
+      ```
+
+- **`.dockerignore`:**
+  - Essential for excluding `node_modules`, `.git`, etc., from the build context.
+  - **Caution:** When using the local build approach (Option 2 above), **do not** ignore the `dist` folders of the packages (e.g., with `packages/*/dist`), as they need to be copied into the image.
+
+- **Node.js Version:** Ensure the Node.js version used in the base images (`FROM node:...`) is compatible with the engine requirements (`engines`) of all dependencies (including devDependencies if building inside Docker).
+
+## 8. Related Zsh Commands
+
+*(These relate primarily to the Docker section)*
+
+- **Docker Compose:**
+  - `docker-compose up` (`dcu` alias)
+  - `docker-compose up -d` (`dcud` alias)
+  - `docker-compose down`
+  - `docker-compose down -v` (`dcd` alias)
+  - `docker-compose build [service_name]` (`dcb [service_name]` alias)
+  - `docker-compose build --no-cache [service_name]`
+  - `docker-compose logs -f [service_name]`
+  - `docker-compose ps`
+  - `docker-compose exec <service_name> <command>` (e.g., `docker-compose exec backend sh`)
+- **General Docker:**
+  - `docker ps` (`dps` alias)
+  - `docker images` (`di` or `dimg` alias)
+  - `docker system prune -a` (`dprune` alias) - Use with caution.
+  - `docker image prune -a` (`dipru` alias) - Use with caution.
+  - `docker volume prune` (`dvprune` alias) - Use with caution.
+- **Build/Run (If building locally first):**
+  - `yarn workspace <package_name> build`

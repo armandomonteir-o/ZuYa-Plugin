@@ -122,7 +122,7 @@ zuya_create_project() {
   # Configurar estrutura com base no template
   case "$template" in
     "next-nest")
-      setup_nextjs "frontend" || return 1 # Parar se setup falhar
+      setup_nextjs "frontend" || return 1
       setup_nestjs "backend" || return 1
       ;;
     "next-express")
@@ -469,60 +469,6 @@ EOL
   echo "📜 Adicionando scripts de teste ao package.json..."
   npm pkg set scripts.test="jest"
   npm pkg set scripts.test:watch="jest --watch"
-
-  # --- Sobrescrever página inicial padrão com template ZuYa (COM RETENTATIVA) ---
-  echo "🎨 Aplicando template ZuYa na página inicial (com retentativa)..."
-  local template_source_path="${0:h}/templates/nextjs/page.tsx.template"
-  local target_file="src/app/page.tsx"
-  local max_attempts=2 # Número de tentativas (1 inicial + 1 retentativa)
-  local attempt=1
-  local copied_successfully=0
-
-  # Verificar se o template existe antes de tentar
-  if [[ ! -f "$template_source_path" ]]; then
-      echo "❌ Erro Crítico no Plugin: Arquivo template '$template_source_path' não encontrado!" 
-      # Decidir se falha ou continua sem template.
-      # Por segurança, vamos falhar aqui para garantir que o template seja aplicado.
-      cd ..; return 1 
-  fi
-
-  while [[ $attempt -le $max_attempts && $copied_successfully -eq 0 ]]; do
-    echo "   Tentativa $attempt de $max_attempts para copiar e verificar template..."
-    
-    # Garantir diretório de destino e copiar
-    # Usar -f em cp para forçar sobrescrita silenciosamente
-    mkdir -p "$(dirname "$target_file")" && cp -f "$template_source_path" "$target_file"
-    local cp_status=$?
-
-    if [[ $cp_status -ne 0 ]]; then
-        echo "   -> Falha na cópia (tentativa $attempt, status: $cp_status)."
-    else
-        # Pequena pausa após a cópia, antes da verificação
-        sleep 1 
-        # Verificar conteúdo após a cópia
-        if grep -q "Welcome to ZuYa Templates" "$target_file"; then
-            echo "   -> Verificação pós-cópia (tentativa $attempt) bem-sucedida."
-            copied_successfully=1
-        else
-            echo "   -> Cópia realizada (tentativa $attempt), mas verificação falhou."
-        fi
-    fi
-
-    # Se não deu certo e ainda há tentativas, esperar mais antes de tentar de novo
-    if [[ $copied_successfully -eq 0 && $attempt -lt $max_attempts ]]; then
-        echo "   Aguardando 10s antes da próxima tentativa..." # Aumentado para 10s
-        sleep 10 # Aumentado para 10s
-    fi
-    attempt=$((attempt + 1))
-  done
-
-  # Verificar resultado final
-  if [[ $copied_successfully -eq 0 ]]; then
-      echo "❌ Falha final ao aplicar template ZuYa em '$target_file' após $max_attempts tentativas."
-      # Vamos falhar a configuração do Next.js se não conseguimos aplicar o template.
-      cd ..; return 1
-  fi
-  # --------------------------------------------------------------------------
 
   echo "✅ Configuração do Next.js concluída."
   cd .. # Voltar para o diretório raiz do projeto

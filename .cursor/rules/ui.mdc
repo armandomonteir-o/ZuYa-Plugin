@@ -1,0 +1,155 @@
+---
+description: Project-specific UI/UX guidelines (Tailwind CSS for Next.js). Start from this template and refine during Step 2 of the Development Workflow.
+globs: app/**/*.{ts,tsx}, components/**/*.{ts,tsx}, src/**/*.{ts,tsx}, styles/**/*.css, tailwind.config.ts
+---
+# Visual Style and UI/UX Guidelines (Tailwind CSS + Next.js)
+
+## 1. Description/Objective
+
+This template defines the structure for project-specific visual style and UI/UX conventions, primarily using Tailwind CSS within a Next.js context. It should be **refined collaboratively during Step 2 of the Development Workflow** based on project requirements and aesthetic goals.
+
+## 2. Cross-References
+
+- **Technical Implementation:** See `typescript-nextjs-tailwind-best-practices.mdc` for technical best practices regarding Tailwind setup, configuration, and component building.
+- **Workflow:** See `development-workflow.mdc` (Step 2) for when this document is initially discussed and refined.
+
+## 3. General Philosophy/Style
+
+-   **Description:** [Describe the desired visual style. E.g., Minimalist, Modern, Corporate, Playful, etc.]
+-   **Key Principles:** [List important principles. E.g., Consistency, Accessibility (WCAG AA), Clarity, Mobile-first, etc.]
+
+## 4. Color Palette
+
+*(Define the main colors and their variations. Use semantic names and corresponding hex/rgb values. Add to `tailwind.config.ts`)*
+
+-   **Primary:**
+    -   `primary`: `#xxxxxx` (Main color for buttons, links, highlights)
+    -   `primary-focus`: `#xxxxxx` (Hover/focus state for primary)
+    -   `primary-content`: `#xxxxxx` (Text/icon color on primary background)
+-   **Secondary:**
+    -   `secondary`: `#xxxxxx` (Supporting color, accents)
+    -   `secondary-focus`: `#xxxxxx`
+    -   `secondary-content`: `#xxxxxx`
+-   **Accent:**
+    -   `accent`: `#xxxxxx` (Color for elements needing emphasis)
+    -   `accent-focus`: `#xxxxxx`
+    -   `accent-content`: `#xxxxxx`
+-   **Neutral:**
+    -   `neutral`: `#xxxxxx` (Main neutral color, base for backgrounds/borders)
+    -   `neutral-focus`: `#xxxxxx`
+    -   `neutral-content`: `#xxxxxx`
+    -   `base-100`: `#ffffff` (Base page background - light theme)
+    -   `base-200`: `#f2f2f2` (Slightly different background)
+    -   `base-300`: `#e5e5e5`
+    -   `base-content`: `#1f2937` (Main text color on light backgrounds)
+-   **Semantic Feedback:**
+    -   `info`: `#xxxxxx`
+    -   `success`: `#xxxxxx`
+    -   `warning`: `#xxxxxx`
+    -   `error`: `#xxxxxx`
+
+**Example `tailwind.config.ts`:**
+```typescript
+// tailwind.config.ts
+import type { Config } from 'tailwindcss'
+
+const config: Config = {
+  content: [ /* ... your content paths ... */ ],
+  theme: {
+    extend: {
+      colors: {
+        primary: '#xxxxxx',
+        'primary-focus': '#xxxxxx',
+        // ... add all your custom colors here
+      },
+      // ... other extensions
+    },
+  },
+  plugins: [], // Consider plugins like @tailwindcss/forms, daisyui, etc.
+}
+export default config
+```
+
+## 5. Typography
+
+*(Define fonts, sizes, weights, and line-heights. Configure in `tailwind.config.ts`)*
+
+-   **Main Font (Sans-serif):** [Font Name], `sans-serif`
+-   **Display/Heading Font (Optional):** [Font Name]
+-   **Size Scale (Example):**
+    -   `text-xs`: 0.75rem
+    -   `text-sm`: 0.875rem
+    -   `text-base`: 1rem (base)
+    -   `text-lg`: 1.125rem
+    -   `text-xl`: 1.25rem
+    -   `text-2xl`: 1.5rem
+    -   `text-3xl`: 1.875rem
+    -   `text-4xl`: 2.25rem
+    -   `text-5xl`: 3rem
+-   **Weights:** Normal (400), Medium (500), Semibold (600), Bold (700)
+-   **Line Heights:** `leading-tight`, `leading-snug`, `leading-normal`, `leading-relaxed`
+
+**Example `tailwind.config.ts`:**
+```typescript
+// Inside theme.extend:
+fontFamily: {
+  sans: ['[Main Font Name]', 'sans-serif'],
+  // serif: ['[Serif Font Name]', 'serif'], // If used
+},
+fontSize: {
+  // ... your custom scale if needed
+}
+```
+
+## 6. Spacing Scale
+
+*(Define the base scale for padding, margin, gap. Usually, Tailwind's default is used, but it can be customized)*
+
+-   **Base:** Tailwind uses a 4px base scale (0: 0, 1: 4px, 2: 8px, ..., 4: 16px, etc.).
+-   **Convention:** [Keep the default? Use specific multiples? E.g., Use multiples of 8px (2, 4, 6, 8... in Tailwind scale)]
+
+## 7. Layout and Grid
+
+-   **Grid System:** [Use Flexbox? CSS Grid? Describe the main approach. E.g., 12-column grid with defined gaps]
+-   **Default Breakpoints (Tailwind):** `sm` (640px), `md` (768px), `lg` (1024px), `xl` (1280px), `2xl` (1536px). [Will these be used? Need customization?]
+-   **Maximum Content Width:** [Define a `max-w-` for main containers? E.g., `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8`]
+
+## 8. Core Component Styles (Examples)
+
+*(Describe the base appearance for common components using Tailwind classes)*
+
+-   **Buttons (`<button>`):**
+    -   **Primary:** `btn btn-primary` -> `.py-2 .px-4 .bg-primary .text-primary-content rounded ...`
+    -   **Secondary:** `btn btn-secondary` -> `...`
+    -   **Outline:** `btn btn-outline` -> `...`
+    -   **Sizes:** `btn-sm`, `btn-lg`
+-   **Inputs (`<input type="text">`):**
+    -   **Default:** `input input-bordered w-full ...` -> `.border .border-neutral/50 .rounded .px-3 .py-2 ...`
+    -   **With Error:** `input-error` -> `... .border-error`
+-   **Cards:**
+    -   **Default:** `card bg-base-100 shadow-xl ...` -> `.bg-base-100 .rounded-lg .shadow-md .p-4 ...`
+
+*(Consider using a plugin like DaisyUI or creating your own reusable React components that apply these classes)*
+
+## 9. Shadows, Borders, and Rounded Corners
+
+-   **Shadows:** [Use Tailwind's default scale (`shadow-sm`, `shadow`, `shadow-lg`, `shadow-xl`, `shadow-2xl`)? Define custom shadows?]
+-   **Rounded Corners:** [Use default scale (`rounded-sm`, `rounded`, `rounded-lg`, `rounded-xl`, `rounded-full`)? Prefer a specific value? E.g., `rounded-lg` for most elements]
+-   **Borders:** [Default thickness? Default color (`border-neutral/50`)?]
+
+## 10. Animations and Transitions
+
+-   **Transitions:** [Use Tailwind's default utilities (`transition`, `duration-150`, `ease-in-out`)? Define preferred durations/timings?]
+-   **Animations:** [Use default animations (`animate-spin`, `animate-pulse`)? Define custom animations?]
+
+## 11. Accessibility (A11y)
+
+- **Target:** [Specify WCAG level, e.g., AA]
+- **Key Considerations:** [Outline specific focus areas, e.g., Semantic HTML, Keyboard Navigation, Focus States, ARIA attributes where necessary, Color Contrast]
+- **Testing:** [Mention tools/methods, e.g., Browser dev tools, Axe DevTools, Screen reader testing]
+
+## 12. Related Zsh Commands
+
+- **Install Tailwind Plugins:** `yarn add -D @tailwindcss/forms ...` (`yad` alias)
+- **Add Shadcn UI Components:** `npx shadcn-ui@latest add <component>`
+- **Run Frontend Dev Server:** `yarn dev` (`yd` alias) - To see UI changes.

@@ -1,0 +1,209 @@
+---
+description: Best practices for NestJS backend development using TypeScript.
+globs: src/**/*.ts, *.spec.ts, *.e2e-spec.ts
+---
+# Best Practices: TypeScript + NestJS
+
+## 1. Description/Objective
+
+This document outlines the guidelines and best practices for developing backend applications using TypeScript and the NestJS framework in this project. It focuses on establishing a robust, maintainable, scalable, and testable architecture.
+
+## 2. Cross-References
+
+- **General Principles:** See `architecture.mdc` for foundational software design principles (SOLID, etc.).
+- **General TypeScript:** See `typescript-nextjs-tailwind-best-practices.mdc#4-typescript` for general TypeScript guidelines (strict mode, naming, etc.).
+- **Testing:** See `testing.mdc` for detailed testing strategies and setup using Jest.
+- **Git:** See `git.mdc` for commit message conventions.
+- **Workflow:** See `development-workflow.mdc` for the overall project workflow.
+- **Docker:** See `architecture.mdc#5-containerization-with-docker` for Docker specifics.
+
+## 3. Project Setup & Tooling
+
+- **Initialization:** Use the official NestJS CLI (`@nestjs/cli`) to scaffold new projects (`nest new <project-name>`). This ensures a standard project structure and initial configuration.
+- **Package Manager:** The CLI prompts for a package manager (npm, yarn, pnpm). Select the one specified during project initiation (Step 1 of the Development Workflow). Maintain consistency with the chosen manager throughout development (use `npm install`/`npm run`, `yarn add`/`yarn`, `pnpm add`/`pnpm` respectively).
+- **TypeScript Configuration:** Ensure `tsconfig.json` has `strict: true` enabled (as covered in the general TypeScript best practices and typically done during initial setup) for maximum type safety from the start.
+
+### 3.1. Running in Docker (Development)
+
+- **Watch Mode & Permissions:** When running NestJS in development mode (`nest start --watch` or `yarn start:dev`) inside a Docker container with mapped volumes (especially on Linux), you might encounter permission errors (`EACCES`) related to the build output directory (usually `dist`). This often happens because the watch process tries to delete/recreate this folder.
+- **Troubleshooting:** While using `user: "${UID}:${GID}"` in `docker-compose.yml` is generally recommended for volume permissions, it might not always resolve this specific watch mode issue. If problems persist, using `user: root` for the backend service *during development only* can be a pragmatic workaround. Ensure your production Docker stage runs as a non-root user (e.g., `appuser`).
+
+## 4. TypeScript
+
+_(Refer to the general TypeScript best practices in `typescript-nextjs-tailwind-best-practices.mdc#4-typescript`, especially sections 4.1, 4.2, and 4.3 regarding `tsconfig.json`, strict typing, utility types, and naming conventions. The principles apply here as well.)_
+
+### 4.1. Specific TypeScript Practices for NestJS
+
+- **Decorators:** Understand and leverage TypeScript decorators extensively, as they are fundamental to NestJS (`@Module`, `@Controller`, `@Injectable`, `@Get`, `@Post`, `@Body`, `@Param`, etc.).
+- **Async/Await:** Use `async/await` consistently for all asynchronous operations (database queries, external API calls, etc.) to keep the event loop unblocked.
+- **Type Safety with Decorators:** Utilize decorators that integrate with `class-validator` and `class-transformer` for robust request validation and transformation based on DTO types.
+
+## 5. NestJS Fundamentals
+
+### 5.1. Modularity
+
+- **Organize by Feature:** Structure your application into feature modules (e.g., `UserModule`, `ProductModule`, `AuthModule`). Each module should encapsulate its controllers, services, providers, and related DTOs/entities.
+- **Shared Modules:** Create shared modules (e.g., `DatabaseModule`, `ConfigModule`) for common functionalities imported by multiple feature modules.
+- **Dynamic Modules:** Use dynamic modules (`.register()`, `.forRoot()`, `.forFeature()`) for configurable modules, especially shared ones.
+- **Explicit Imports/Exports:** Be explicit about what each module imports and exports to maintain clear dependencies.
+
+### 5.2. Controllers
+
+- **Keep Controllers Thin:** Controllers should primarily handle request/response flow, delegate business logic to services, and perform basic input validation/transformation (often via pipes and DTOs).
+- **Route Definitions:** Use descriptive HTTP method decorators (`@Get`, `@Post`, `@Put`, `@Delete`, `@Patch`) and route paths.
+- **Route Parameters & Query Strings:** Use `@Param()` and `@Query()` decorators with specific parameter names for clarity.
+- **Request Body:** Use `@Body()` decorator, preferably coupled with a globally applied `ValidationPipe` and a DTO class.
+
+### 5.3. Services (Providers)
+
+- **Encapsulate Business Logic:** Services (`@Injectable`) should contain the core business logic, data manipulation, and interactions with repositories or external services.
+- **Constructor Injection:** **Always** inject dependencies (other services, repositories, configuration providers like `ConfigService`) through the class constructor. NestJS's DI container handles instantiation and wiring.
+    ```typescript
+    @Injectable()
+    export class UsersService {
+      constructor(
+        private readonly userRepository: UserRepository,
+        private readonly configService: ConfigService,
+      ) {}
+      // ... methods using userRepository and configService
+    }
+    ```
+- **Single Responsibility Principle:** Keep services focused on a specific domain or task.
+
+### 5.4. Data Transfer Objects (DTOs)
+
+- **Define Contracts:** Use DTO classes to define the shape of data for requests (incoming) and potentially responses (outgoing).
+- **Validation:** Use `class-validator` decorators (`@IsString`, `@IsEmail`, `@IsNotEmpty`, `@MinLength`, etc.) within DTOs to validate incoming request data automatically via `ValidationPipe`.
+- **Transformation:** Use `class-transformer` decorators (`@Expose`, `@Exclude`, `@Type`) for controlling data transformation, especially when interacting with responses or external systems.
+- **Readonly DTOs:** Make DTO properties `readonly` in TypeScript for immutability.
+- **DTO Variations:** Use NestJS Mapped Types (`@nestjs/mapped-types` or `@nestjs/swagger`) like `PartialType`, `OmitType`, `PickType` to easily create variations of base DTOs (e.g., for update operations where fields are optional).
+
+## 6. Data Persistence
+
+- **ORM/Database Client:** Choose an appropriate tool (e.g., TypeORM, Prisma, Mongoose) and integrate it correctly via a dedicated module (`DatabaseModule`).
+- **Repository Pattern:** Abstract database interactions behind repositories (often provided by the ORM or custom-built) injected into services. Services should not contain raw database queries or ORM-specific methods directly where possible.
+- **Entities/Models:** Define database entities/models using ORM decorators or schemas, keeping them separate from DTOs. Ensure sensitive data is not exposed by default.
+- **Transactions:** Use database transactions for operations involving multiple dependent database writes to ensure atomicity.
+
+## 7. Configuration
+
+- **Use `@nestjs/config`:** Leverage the official `ConfigModule` and `ConfigService` for handling environment variables and configuration files (`.env`). Load it early in the root `AppModule`.
+- **Typed Configuration:** Define a typed configuration interface or class and use schema validation (e.g., with Joi) within `ConfigModule.forRoot()` for type safety and validation on startup.
+- **Avoid Hardcoding:** Never hardcode configuration values (API keys, database credentials, ports) directly in the code. Access them via `ConfigService`.
+
+## 8. Error Handling
+
+- **Built-in Exceptions:** Use NestJS's standard HTTP exceptions (`BadRequestException`, `NotFoundException`, `UnauthorizedException`, `ForbiddenException`, `InternalServerErrorException`, etc.).
+- **Custom Exceptions:** Create custom exception classes extending `HttpException` for specific domain errors, providing clear messages and potentially error codes.
+- **Exception Filters:** Implement custom exception filters (`@Catch()`) for centralized error handling, logging, and formatting standardized error responses.
+
+## 9. Pipes, Guards, and Interceptors
+
+- **Pipes (`PipeTransform`):**
+    - **ValidationPipe:** Always apply `ValidationPipe` globally (`app.useGlobalPipes(new ValidationPipe(...))`) to enforce DTO validation. Configure options like `whitelist: true` (strip non-DTO properties) and `transform: true` (transform payload to DTO instance).
+    - **Custom Pipes:** Create custom pipes for specific data transformation or complex validation logic.
+- **Guards (`CanActivate`):**
+    - Use guards for authorization logic (e.g., checking roles, permissions, JWT validity). Keep guards focused on *authorization*, not authentication.
+    - Authentication logic often resides in middleware (like Passport). Guards verify the result of authentication.
+- **Interceptors (`NestInterceptor`):**
+    - Use interceptors for cross-cutting concerns that modify or handle the request/response stream.
+    - Examples: Transforming response data structure, logging request/response details, caching responses, handling timeouts.
+
+## 10. Testing
+
+- **Unit Tests:** Test services, controllers (mocking dependencies), pipes, and guards in isolation using Jest (default) or another testing framework. Leverage `@nestjs/testing` (`Test.createTestingModule`) for creating testing modules and managing mocks.
+- **Integration Tests:** Test interactions between multiple components (e.g., controller calling a service interacting with a mocked database) within a testing module context.
+- **E2E Tests:** Test the application's API endpoints from end-to-end, making real HTTP requests (e.g., using Supertest via `@nestjs/testing`). Often involves setting up a test database.
+- **Mocking:** Use Jest's mocking capabilities (`jest.fn()`, `jest.spyOn()`) effectively to isolate units under test.
+
+## 11. Security
+
+- **Use `helmet`:** Integrate the `helmet` middleware for setting various security-related HTTP headers.
+- **CORS:** Configure Cross-Origin Resource Sharing (CORS) appropriately using NestJS's built-in options (`enableCors()`). Be specific about allowed origins in production.
+- **Input Validation:** Rely heavily on `ValidationPipe` and DTOs to prevent injection attacks and ensure data integrity.
+- **Rate Limiting:** Implement rate limiting (e.g., using `nestjs-rate-limiter` or `@nestjs/throttler`) to prevent abuse.
+- **Authentication:** Use robust authentication strategies (e.g., JWT with Passport via `@nestjs/passport`, `@nestjs/jwt`). Store secrets securely (use `ConfigService`). Implement refresh tokens correctly.
+- **Authorization:** Implement authorization using Guards based on roles or permissions.
+
+## 12. Logging
+
+- **Use `@nestjs/common` Logger:** Utilize the built-in `Logger` service for consistent logging. Instantiate it with the context (`new Logger(MyService.name)`).
+- **Custom Logger:** Implement a custom logger (extending `LoggerService`) for advanced logging needs (e.g., sending logs to external services like Datadog/Sentry, custom formatting, structured logging).
+- **Contextual Logging:** Include contextual information (e.g., request ID, user ID) in logs where possible, often facilitated by Interceptors or middleware.
+
+## 13. Linting & Formatting
+
+- **ESLint & Prettier:** NestJS projects initialized with the CLI come with baseline configurations for ESLint (`eslint.config.mjs` or `.eslintrc.js`) and Prettier (`.prettierrc`).
+- **ESLint v9+ (Flat Config):** Modern ESLint versions (v9+) use a "flat config" file named `eslint.config.mjs` (or `.js`) by default, replacing older formats like `.eslintrc.js`. Ensure your setup reflects this.
+- **TypeScript ESLint:** For TypeScript projects, you MUST install the necessary ESLint plugins and parser:
+  ```bash
+  yarn add -D typescript-eslint # Or npm/pnpm equivalent
+  ```
+- **Basic `eslint.config.mjs` Example:** A minimal flat config integrating TypeScript and Prettier might look like this (adapt paths and rules as needed):
+  ```javascript
+  // eslint.config.mjs
+  import tseslint from 'typescript-eslint';
+  import prettierConfig from 'eslint-config-prettier'; // Ensure eslint-config-prettier is installed
+
+  export default tseslint.config(
+    {
+      // Base config for all files
+      ignores: ['dist/', 'node_modules/', '**/.*config.js', '**/.*rc.js'], // Ignore build output, deps, old configs
+    },
+    // TypeScript files configuration
+    {
+      files: ['**/*.ts'],
+      extends: [
+        ...tseslint.configs.recommended, // Or recommendedTypeChecked for stricter rules
+        // Consider adding NestJS specific plugins/configs if available
+      ],
+      rules: {
+        // Override or add specific rules here
+        '@typescript-eslint/no-explicit-any': 'warn', // Recommended: Avoid 'any'
+        // Add other project-specific rules
+      },
+    },
+    // Apply Prettier rules last to override conflicting formatting rules
+    prettierConfig,
+  );
+  ```
+- **Review Defaults:** Always review the ESLint rules being applied, especially regarding strictness:
+    - **Alignment with Strict Mode:** Ensure the rules complement `tsconfig.json`'s `strict` setting.
+    - **`@typescript-eslint/no-explicit-any`:** As shown in the example, it is strongly recommended to set this rule to at least `warn` or `error` to actively discourage the use of `any` and leverage TypeScript's type safety benefits, especially if `strict: true` is used in `tsconfig.json`.
+- **Consistency:** Use the configured Prettier setup (`.prettierrc`) and run the formatter (`yarn format`) to ensure consistent code style.
+
+## 14. Related Zsh Commands
+
+*(Replace `yarn` with `npm run` or `pnpm` if using those package managers)*
+
+- **Setup:**
+  - `nest new <project-name>` (Using Nest CLI)
+  - `yarn add <dependency>` (`ya` alias)
+  - `yarn add -D <dev-dependency>` (`yad` alias)
+- **Development:**
+  - `yarn start:dev` (`nrsd` alias or similar) - Starts the development server with watch mode.
+- **Build:**
+  - `yarn build` (`yb` or `nb` alias) - Creates a production build.
+- **Production Start:**
+  - `yarn start:prod` (or `yarn start`) - Starts the application from the production build.
+- **Linting & Formatting:**
+  - `yarn lint` (`yl` or `yln` alias) - Runs ESLint.
+  - `yarn lint:fix` (`ylf` or `ylnf` alias) - Runs ESLint and attempts to fix issues.
+  - `yarn format` (`yf` alias) - (If configured) Runs Prettier.
+- **Testing:**
+  - `yarn test` (`yt` or `nt` alias) - Runs unit/integration tests.
+  - `yarn test:watch` - Runs tests in watch mode.
+  - `yarn test:cov` - Runs tests with coverage report.
+  - `yarn test:e2e` - Runs end-to-end tests.
+- **Database (Example with Prisma):**
+  - `yarn prisma generate` - Generates Prisma client.
+  - `yarn prisma migrate dev` - Creates/applies migrations in development.
+  - `yarn prisma migrate deploy` - Applies migrations in production.
+  - `yarn prisma studio` - Opens Prisma Studio GUI.
+- **Database (Example with TypeORM):**
+  - `yarn typeorm migration:generate -n <MigrationName>`
+  - `yarn typeorm migration:run`
+  - `yarn typeorm migration:revert`
+- **Dependency Management:**
+  - `yarn outdated` (`yout` alias)
+  - `yarn upgrade-interactive --latest` (`yui` or `yuil` alias)

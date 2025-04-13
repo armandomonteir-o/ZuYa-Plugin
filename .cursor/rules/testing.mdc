@@ -1,0 +1,310 @@
+---
+description: Guidelines and learnings about unit, integration, and E2E tests with Jest and related tools.
+globs: ["**/*.{test,spec}.{ts,tsx,js,jsx}"]
+alwaysApply: false
+---
+
+# Jest Testing Guidelines
+
+## 1. Description/Objective
+
+This document records our learnings and defines best practices for writing automated tests (Unit, Integration, E2E) using Jest and related libraries (like `@testing-library/react`, `ts-jest`) within this project. The goal is to ensure code quality, prevent regressions, and facilitate refactoring.
+
+## 2. Cross-References
+
+- **Implementation (Backend):** See `nestjs-typescript-best-practices.mdc#10-testing` for NestJS-specific testing context (`@nestjs/testing`).
+- **Implementation (Frontend):** See `typescript-nextjs-tailwind-best-practices.mdc#74-testing` for Next.js/React testing context (`@testing-library/react`).
+- **Workflow:** See `development-workflow.mdc` for how testing fits into the development lifecycle (Steps 3, 6, 7).
+- **Principles:** See `architecture.mdc` for the importance of Testability.
+
+## 3. Initial Setup (TypeScript with `ts-jest`)
+
+- **Dev Dependencies:** Install `jest`, `@types/jest`, `ts-jest`.
+  ```bash
+  # Inside the package to be tested
+  yarn add -D jest @types/jest ts-jest
+  # Update root lockfile
+  yarn install
+  ```
+- **ESLint v9+ Context (Flat Config):** Ensure your project's main ESLint setup uses the modern flat config (`eslint.config.mjs` or `.js`) and includes `typescript-eslint`. Refer to other rules (`nestjs-...`, `nextjs-...`) for examples. This context is important for potential linting issues with Jest config files.
+- **Configuration (`jest.config.js` or `.cjs`):**
+  - Create `jest.config.js` or `jest.config.cjs` at the package root.
+  - Use `preset: 'ts-jest'` and `testEnvironment: 'node'` (adjust environment for frontend tests, see below).
+  - Define `testMatch` (e.g., `['**/__tests__/**/*.test.{ts,tsx}', '**/src/lib/**/__tests__/**/*.test.ts']`).
+  - Optionally configure `collectCoverage`, `coverageDirectory`, `coverageProvider`, `coveragePathIgnorePatterns`.
+  - Include `clearMocks: true` for test isolation.
+  ```javascript
+  // Example jest.config.js
+  /** @type {import('ts-jest').JestConfigWithTsJest} */
+  module.exports = {
+    preset: "ts-jest",
+    testEnvironment: "node",
+    // Updated to include tests in lib/__tests__
+    testMatch: [
+      "**/__tests__/**/*.test.{ts,tsx}",
+      "**/src/lib/**/__tests__/**/*.test.{ts,tsx}",
+    ],
+    collectCoverage: true,
+    coverageDirectory: "coverage",
+    coverageProvider: "v8",
+    // Updated to ignore __tests__ in lib coverage if desired
+    coveragePathIgnorePatterns: [
+      "/node_modules/",
+      "/dist/",
+      "/src/lib/",
+      "/__tests__/",
+      "\.mock\.ts$"
+    ],
+    clearMocks: true,
+  };
+  ```
+  - **ESLint & CommonJS (`.cjs`) Files:** 
+    - **Why `.cjs`:** If your project uses ES modules (`"type": "module"` in `package.json`), using `module.exports` in a `.js` file like `jest.config.js` will cause errors. Renaming to `jest.config.cjs` signals Node.js to treat it as CommonJS, resolving the runtime error.
+    - **Linting `.cjs` with Flat Config:** However, the default ESLint flat config (`eslint.config.mjs`) might then incorrectly lint the `.cjs` file as an ES module, causing errors like `'module' is not defined`. 
+    - **Solution:** Explicitly configure ESLint in `eslint.config.mjs` to handle `.cjs` files correctly. Add a configuration object specifically for `files: ['**/*.cjs']`:
+      ```javascript
+      // In eslint.config.mjs, add an object like this:
+      {
+        files: ['**/*.cjs'],
+        languageOptions: {
+          sourceType: 'commonjs',
+          globals: {
+            ...globals.node, // Include Node.js globals like 'module', 'require'
+          }
+        }
+      }
+      ```
+- **Test Script (`package.json` of the package):**
+  - Add `"test": "jest"` to the `scripts` section.
+
+### 3.1 Setup for Next.js Frontend (App Router)
+
+- **Dependencies:** Besides the base Jest dependencies, install `@testing-library/react` and `@testing-library/jest-dom`.
+  ```bash
+  # Inside packages/frontend
+  yarn add -D jest @types/jest ts-jest jest-environment-jsdom @testing-library/react @testing-library/jest-dom
+  # Optional but might be needed depending on setup:
+  # yarn add -D @testing-library/dom
+  # Update root lockfile
+  yarn install
+  ```
+- **Jest Configuration (`jest.config.cjs`):**
+  - **Crucial:** Use the `next/jest` preset to handle Next.js specific configurations (like SWC transform).
+  - Create `jest.config.js` (or preferably `jest.config.cjs` to avoid potential ES Module linting issues) in the frontend package root.
+  - Configure `testEnvironment: 'jsdom'`.
+  - Configure `setupFilesAfterEnv: ['<rootDir>/jest.setup.js']` to load Jest DOM matchers.
+  - Example:
+    ```javascript
+    // packages/frontend/jest.config.cjs
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const nextJest = require('next/jest');
+
+    const createJestConfig = nextJest({
+      dir: './', // Path to load next.config.js and .env files
+    });
+
+    /** @type {import('jest').Config} */
+    const customJestConfig = {
+      testEnvironment: 'jsdom',
+      setupFilesAfterEnv: ['<rootDir>/jest.setup.js'], // Use .js for setup
+      moduleNameMapper: {
+        // Handle module aliases (e.g., '^@/components/(.*)$': '<rootDir>/src/components/$1')
+      },
+      preset: 'ts-jest', // Still needed for TS support alongside next/jest
+      clearMocks: true,
+    };
+
+    module.exports = createJestConfig(customJestConfig);
+    ```
+- **Jest Setup (`jest.setup.js`):**
+  - Create `jest.setup.js` (note: `.js`, not `.ts`) in the frontend package root.
+  - Content: `import '@testing-library/jest-dom';`
+- **TypeScript Config (`tsconfig.json` - Frontend):**
+  - To avoid editor errors with Jest DOM matchers (e.g., `toBeInTheDocument`), add `@testing-library/jest-dom` to `compilerOptions.types`:
+    ```json
+    "compilerOptions": {
+      // ... other options
+      "types": ["jest", "@testing-library/jest-dom"]
+    }
+    ```
+
+## 4. Mocking Modules and Dependencies
+
+- **Goal:** Isolate the unit under test from its external dependencies (e.g., API calls, database access).
+
+### 4.1. Mocking Entire Modules (`jest.mock`)
+
+- **`jest.mock('<relative_module_path>')`:**
+  - Use at the top of the test file to replace an entire module. Ideal for complex external dependencies (like `aws-sdk` or internal infrastructure modules like `dynamodb.ts`).
+  - The second argument is a factory function that returns the mocked implementation of the module.
+  - Named exports within the mocked module must be simulated (e.g., using `jest.fn()` for functions).
+  ```typescript
+  // Example: Mocking src/lib/dynamodb.ts
+  jest.mock("../lib/dynamodb", () => ({
+    docClient: {
+      send: jest.fn(), // Mock the send function
+    },
+    DYNAMODB_TABLE_NAME: "MockTableName", // Mock the exported constant
+  }));
+  ```
+- **Controlling the Mock:**
+  - Access the mocked function (e.g., `(docClient.send as jest.Mock)`) to:
+    - `.mockClear()`: Clear the call state (use in `beforeEach`).
+    - `.mockResolvedValue(value)`: Simulate a successfully resolved Promise.
+    - `.mockRejectedValue(error)`: Simulate a rejected Promise.
+    - `.mockReturnValue(value)`: Simulate synchronous return.
+- **Verifying Calls:**
+  - `expect(mockFn).toHaveBeenCalled()`
+  - `expect(mockFn).toHaveBeenCalledTimes(number)`
+  - `expect(mockFn).toHaveBeenCalledWith(...arguments)` or `expect.objectContaining(...)` for partial checks.
+
+### 4.2. Local Mocking of Specific Functions
+
+- **When to Use:** To test a unit (e.g., a Handler) that depends on helper functions (e.g., `dateUtils`, `databaseService`) which *already have their own granular unit tests*. Avoids unnecessary global mocks in the Handler's test file.
+- **Approach:** Mock only the necessary functions *locally* within the `describe` or `beforeEach` of the main test.
+  ```typescript
+  describe("ConsultaContagemIntentHandler", () => {
+    let mockGetDateRange: jest.Mock;
+    let mockCountEvents: jest.Mock;
+
+    beforeEach(() => {
+      // Create fresh mocks
+      mockGetDateRange = jest.fn();
+      mockCountEvents = jest.fn();
+
+      // Import REAL modules (outside global jest.mock)
+      const dateUtils = require("../lib/dateUtils");
+      const databaseService = require("../lib/databaseService");
+
+      // Replace real functions with mocks *only for this describe block*
+      dateUtils.getDateRangeFromAlexaDate = mockGetDateRange;
+      databaseService.countTobaccoEventsInRange = mockCountEvents;
+    });
+
+    afterEach(() => {
+      // Clean up mocks to prevent leakage between tests
+      jest.resetAllMocks();
+    });
+
+    it("should call mocked functions", async () => {
+      // Arrange
+      mockGetDateRange.mockReturnValue({ start: '...', end: '...' });
+      mockCountEvents.mockResolvedValue(5);
+      // ... create handlerInput ...
+
+      // Act
+      await ConsultaContagemIntentHandler.handle(handlerInput);
+
+      // Assert
+      expect(mockGetDateRange).toHaveBeenCalledTimes(1);
+      expect(mockCountEvents).toHaveBeenCalledTimes(1);
+    });
+  });
+  ```
+- **Alternative with `jest.spyOn`:** Another way is to use `jest.spyOn(module, 'functionName').mockImplementation(...)` inside `beforeEach`, which can be cleaner if the module is already imported. Remember to restore with `spy.mockRestore()` in `afterEach`.
+
+## 5. Structure and Best Practices
+
+- **Organization:**
+  - Place tests for main units (handlers, components) in `src/__tests__`.
+  - Place tests for helper modules/functions (libs, utils) in a `__tests__` directory within the module's folder (e.g., `src/lib/__tests__/dateUtils.test.ts`).
+- **Naming:** Use `*.test.ts` or `*.spec.ts`.
+- **Blocks:** Use `describe()` to group related tests and `it()` or `test()` for individual test cases.
+- **AAA Pattern (Arrange-Act-Assert):**
+  - **Arrange:** Set up the test environment (mocks, input data).
+  - **Act:** Execute the function/method being tested.
+  - **Assert:** Verify the results (return value, side effects, mock calls) using `expect()`.
+- **Helpers:** Create helper functions (e.g., `createMockHandlerInput`) to reduce duplication in the Arrange phase.
+- **Typing:** Use TypeScript and SDK types (`ask-sdk-model`) for clarity and safety, even if you occasionally need `as any` or `as unknown` to work around typing limitations in complex mocks.
+- **Isolation:** Use `clearMocks: true` in `jest.config.js` and/or `mockFn.mockClear()` or `jest.resetAllMocks()` in `beforeEach`/`afterEach` to ensure mock state doesn't leak between tests.
+- **Linter:** Be aware that linters might struggle to infer complex types from SDKs or exported functions (like the ASK SDK `handler`), potentially causing false positives. Evaluate if the error is real or a linter limitation before modifying functional code.
+
+## 6. Testing ASK SDK Handlers
+
+- **Input (`HandlerInput`):** Create realistic mocks of the `HandlerInput` object, including `requestEnvelope` (with `request`, `session`, `context`) and `attributesManager`. Use types from `ask-sdk-model`.
+- **Simulating Scenarios:**
+  - Create inputs for different `requestType` (`LaunchRequest`, `IntentRequest`).
+  - For `IntentRequest`, define `intent.name`, `confirmationStatus`, `slots` (including `value`, `resolutions` if needed).
+  - To simulate a missing user, modify the `userId` on the `handlerInput` *within* the test (using `as any` if necessary on the `userId` property) rather than breaking the `Session` type structure.
+- **Recommended Approach: Test Individual Handlers:**
+  - **Problem:** Testing the final `handler` function exported by `SkillBuilders.lambda()` can be complex due to type/behavior incompatibilities between `ts-jest` and how the SDK assembles the final response in a test environment. The function might expect a `callback` or not return the complete `ResponseEnvelope` as a `Promise`.
+  - **Solution:** It's more robust and straightforward to **test the individual handler objects** (e.g., `LaunchRequestHandler`, `FumeiUmTabacoIntentHandler`) directly.
+  - **Implementation:**
+    1.  **Export handlers:** Ensure your handler constants (e.g., `export const LaunchRequestHandler = {...}`) are exported from your main file (e.g., `src/index.ts`).
+    2.  **Import in test:** Import the specific handlers into your test file (`import { LaunchRequestHandler } from '../index';`).
+    3.  **Call `.handle()`:** In the `Act` phase of your test, call the specific handler's `.handle()` method: `await LaunchRequestHandler.handle(mockHandlerInput)`. The return will be of type `Response` (from `ask-sdk-model`).
+- **Testing the Response (Individual Handlers):**
+  - The `response` object returned by the individual handler's `.handle()` directly contains the relevant properties.
+  - Use `expect(response.outputSpeech)` to verify speech (remember to check `response.outputSpeech?.type` and the `.ssml` content).
+  - Use `expect(response.reprompt)` to verify the reprompt (also checking `outputSpeech?.type` and `.ssml`).
+  - **`shouldEndSession`:** Although the final `shouldEndSession` value is determined by the `SkillBuilder` after handler execution, the `response` object returned by `.handle()` *can* contain this property if the handler explicitly sets it (e.g., when prompting for a missing slot). Testing this property at the handler level *can be useful* to verify the handler's intent, but be aware it's not the final `ResponseEnvelope` value.
+- **Testing Interactions (Mocks):** Verify that mocked functions (global or local) were called as expected.
+
+## 7. Additional Techniques and Debugging
+
+### 7.1. Time-Dependent Tests
+
+- **Problem:** Tests using `new Date()` can fail depending on when they are run.
+- **Solution:** Use Jest's Timer Mocks to control time.
+  ```typescript
+  describe('Tests with controlled time', () => {
+    const MOCK_DATE = new Date('2023-11-28T10:00:00.000Z');
+
+    beforeAll(() => {
+      jest.useFakeTimers();
+      jest.setSystemTime(MOCK_DATE);
+    });
+
+    afterAll(() => {
+      jest.useRealTimers(); // Restore real timers
+    });
+
+    it('should use the mocked date', () => {
+      // new Date() inside here will return MOCK_DATE
+      expect(new Date().toISOString()).toBe(MOCK_DATE.toISOString());
+    });
+  });
+  ```
+
+### 7.2. Verifying Console Logs
+
+- **Problem:** Verifying important messages were logged or suppressing logs during tests.
+- **Solution:** Use `jest.spyOn(console, 'log')` (or `warn`, `error`).
+  ```typescript
+  it('should log an error on failure', async () => {
+    // Arrange
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(); // Suppress and spy
+    const mockError = new Error('Test Error');
+    mockDependency.mockRejectedValue(mockError);
+
+    // Act
+    await functionUnderTest();
+
+    // Assert
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Expected error message:', mockError);
+
+    // Clean up the spy
+    consoleErrorSpy.mockRestore();
+  });
+  ```
+
+## 8. Related Zsh Commands
+
+*(Replace `yarn` with `npm run` or `pnpm` if using those package managers)*
+
+- **Run All Tests (Current Package/Workspace):**
+  - `yarn test` (`yt` or `nt` alias)
+- **Run Tests in Watch Mode:**
+  - `yarn test --watch`
+- **Run Tests with Coverage:**
+  - `yarn test --coverage` (`ytc` alias?)
+- **Run Specific Test File:**
+  - `yarn test <path/to/file.test.ts>`
+- **Run Tests Matching Pattern:**
+  - `yarn test -t "<describe block name or it block name>"`
+- **Run E2E Tests (if configured separately):**
+  - `yarn test:e2e`
+- **Update Snapshots:**
+  - `yarn test -u`
+- **Install Testing Dependencies:**
+  - `yarn add -D jest @types/jest ts-jest ...` (`yad` alias)

@@ -1,0 +1,198 @@
+---
+description: Guidelines for writing Git commit messages using the Conventional Commits specification.
+globs: [] # Typically not file-specific
+---
+
+# Git Commit Message Guidelines (Conventional Commits)
+
+## 1. Description/Objective
+
+This document outlines the standards for writing Git commit messages in this project, following the [Conventional Commits 1.0.0](mdc:https:/www.conventionalcommits.org/en/v1.0.0) specification. Adhering to these guidelines makes the Git history easier to read, understand, and automate (e.g., for generating changelogs or triggering semantic versioning).
+
+## 2. Cross-References
+
+- **Workflow:** See `development-workflow.mdc` (Steps 6 & 7) for when commits should be made.
+- **Commands:** See the `Related Zsh Commands` section below for useful Git aliases.
+
+## 3. Commit Message Format
+
+Each commit message consists of a **header**, an optional **body**, and an optional **footer**.
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### 3.1. Header
+
+The header is mandatory and includes the `type`, optional `scope`, and `description`.
+
+-   **`<type>`:** Describes the kind of change:
+    -   **`feat`**: A new feature for the user.
+    -   **`fix`**: A bug fix for the user.
+    -   **`build`**: Changes affecting the build system or external dependencies (e.g., npm, Docker, webpack).
+    -   **`chore`**: Routine tasks, maintenance, or changes that don't modify `src` or test files (e.g., updating dependencies, formatting).
+    -   **`ci`**: Changes to CI configuration files and scripts (e.g., GitHub Actions, Travis).
+    -   **`docs`**: Documentation only changes (e.g., README, code comments).
+    -   **`perf`**: A code change that improves performance.
+    -   **`refactor`**: A code change that neither fixes a bug nor adds a feature (e.g., renaming variables, improving code structure).
+    -   **`revert`**: Reverts a previous commit.
+    -   **`style`**: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc.).
+    -   **`test`**: Adding missing tests or correcting existing tests.
+
+-   **`[optional scope]`:** A noun describing the section of the codebase affected by the change (e.g., `auth`, `ui`, `api`, `parser`, `config`). Use lowercase.
+    -   **Note:** Use a scope when a change primarily affects a specific, identifiable part of the system. If the change is broad or touches many parts, omit the scope.
+    -   Example: `feat(auth): add password reset endpoint`
+
+-   **`<description>`:** A concise summary of the change:
+    -   Use the imperative, present tense: "change" not "changed" nor "changes".
+    -   Don't capitalize the first letter.
+    -   No dot (`.`) at the end.
+    -   Keep it short (aim for 50 characters, max 72 recommended).
+
+### 3.2. Body
+
+The body is optional. Use it to provide additional context, motivation for the change, and contrast with previous behavior.
+
+-   Use the imperative, present tense.
+-   Separate the body from the header with a blank line.
+-   Wrap lines at 72 characters.
+
+### 3.3. Footer(s)
+
+The footer is optional. Use it for:
+
+-   **Breaking Changes:** Start with `BREAKING CHANGE:` followed by a description of the change, justification, and migration notes.
+    ```
+    BREAKING CHANGE: `user.userId` is now `user.id`. Update all references accordingly.
+    ```
+-   **Referencing Issues:** Link to related issues (e.g., GitHub, JIRA).
+    -   Use keywords like `Closes`, `Fixes`, `Resolves`.
+    -   Example: `Fixes #123`, `Closes PROJ-456`
+
+## 4. Examples
+
+**Commit with `feat` type and scope:**
+```
+feat(lang): add polish language
+```
+
+**Commit with `fix` type, scope, and issue reference:**
+```
+fix(parser): correct handling of escaped characters
+
+Closes #42
+```
+
+**Commit with `chore` type and body:**
+```
+chore: update dependency typescript to v5.4
+
+Upgrades TypeScript to the latest stable version for improved type checking features.
+```
+
+**Commit with `feat` type and BREAKING CHANGE:**
+```
+feat: allow provided config object to extend other configs
+
+BREAKING CHANGE: `extends` key in config file is now used for extending other config files. Use `externalConfigs` key instead for previous behavior.
+```
+
+## 5. Why Use Conventional Commits?
+
+-   **Automated Changelogs:** Tools can generate CHANGELOG.md files automatically.
+-   **Semantic Versioning:** Automatically determine semantic version bumps based on commit types (`feat` -> MINOR, `fix` -> PATCH, `BREAKING CHANGE` -> MAJOR).
+-   **Readability:** Makes commit history easier to understand for humans and machines.
+-   **Team Consistency:** Enforces a standard across the development team.
+-   **Facilitates Atomic Commits:** Encourages making small, focused commits where each addresses a single concern, making the commit message easier to write and the change easier to review or revert.
+
+## 6. Related Zsh Commands (Common Aliases)
+
+*(These aliases are often provided by the Oh My Zsh git plugin. Verify they exist with `alias | grep '^g'`)*
+
+- **Status:**
+  - `gst`: `git status`
+  - `gss`: `git status --short`
+  - `gsb`: `git status --short --branch`
+- **Add:**
+  - `ga`: `git add <file>`
+  - `gaa`: `git add --all`
+  - `gapa`: `git add --patch`
+- **Commit:**
+  - `gc`: `git commit --verbose`
+  - `gca`: `git commit --verbose --all`
+  - `gcmsg "<message>"`: `git commit --message "<message>"`
+  - `gc!`: `git commit --verbose --amend`
+  - `gca!`: `git commit --verbose --all --amend`
+  - `gcan!`: `git commit --verbose --all --no-edit --amend`
+- **Log:**
+  - `glo`: `git log --oneline --decorate`
+  - `glog`: `git log --oneline --decorate --graph`
+  - `glol`: `git log --graph --pretty="%Cred%h%Creset -%C(auto)%d%Creset %s %Cgreen(%ar) %C(bold blue)<%an>%Creset"`
+  - `glola`: Same as `glol` but `--all` branches.
+- **Branch/Switch:**
+  - `gb`: `git branch`
+  - `gco <branch>`: `git checkout <branch>`
+  - `gsw <branch>`: `git switch <branch>`
+  - `gcb <new-branch>`: `git checkout -b <new-branch>`
+  - `gswc <new-branch>`: `git switch --create <new-branch>`
+- **Fetch/Pull/Push:**
+  - `gf`: `git fetch`
+  - `gfa`: `git fetch --all --tags --prune --jobs=10`
+  - `gl`: `git pull`
+  - `gpr`: `git pull --rebase`
+  - `gp`: `git push`
+  - `gpsup`: `git push --set-upstream origin $(git_current_branch)`
+
+*(Consider integrating tools like `commitlint` and `husky` to enforce these guidelines automatically before commits are made.)*
+
+## 7. Recommended `.gitignore` Template
+
+While the specific contents of `.gitignore` depend on the project's technology stack, here is a recommended baseline template that includes common Node.js artifacts, OS-specific files, editor/IDE files, and crucially, the workflow/Cursor artifacts used in this development process:
+
+```gitignore
+# Node.js
+node_modules/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build artifacts
+dist/
+build/
+
+# Environment variables
+.env*
+!.env.example
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Editor/IDE specific
+.idea/
+.vscode/
+*.swp
+
+# Cursor / Workflow Artifacts
+.cursor/
+PROJECT_TASKS.json
+PROJECT_LEARNINGS.md
+INITIAL_GUIDE.md
+feedbacks.md
+cursor-prompts.txt
+
+# Test Reports / Coverage
+coverage/
+junit.xml
+
+# Logs
+logs/
+*.log
+```
+
+**Important:** Always ensure `.cursor/` is included to prevent accidentally committing project-specific rules and AI context. 

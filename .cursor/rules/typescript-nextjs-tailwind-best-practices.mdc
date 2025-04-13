@@ -1,0 +1,282 @@
+---
+description: Best practices for frontend development using TypeScript, Next.js (App Router), and Tailwind CSS
+globs: app/**/*.{ts,tsx}, components/**/*.{ts,tsx}, src/**/*.{ts,tsx}, tailwind.config.ts, next.config.*, tsconfig.json, postcss.config.*
+---
+# Best Practices: TypeScript + Next.js + Tailwind CSS
+
+## 1. Description/Objective
+
+This document outlines the guidelines and best practices for developing web applications using TypeScript, Next.js (specifically the App Router), and Tailwind CSS within this project's context. It aims to ensure code consistency, maintainability, performance, and leverage the strengths of each technology.
+
+## 2. Cross-References
+
+- **General Principles:** See `architecture.mdc` for foundational software design principles.
+- **Project-Specific UI/UX:** See `ui.mdc` for project-specific visual guidelines (colors, typography, components).
+- **Testing:** See `testing.mdc` for detailed testing strategies and setup using Jest/React Testing Library.
+- **Git:** See `git.mdc` for commit message conventions.
+- **Workflow:** See `development-workflow.mdc` for the overall project workflow.
+
+## 3. Project Setup & Initialization
+
+- **Initialization:** Use the official Next.js CLI (`create-next-app`) to scaffold new projects. Select the recommended options: TypeScript, ESLint, Tailwind CSS, and App Router.
+- **`src/` Directory:** The CLI might ask about using a `src/` directory. While optional, using it (`src/app`, `src/components`, etc.) is common practice for separating application code from configuration files. Be aware that if you choose this, configuration files like `tsconfig.json`, `tailwind.config.ts` (if found/created), `postcss.config.mjs`, and `next.config.ts` usually remain in the project root, outside `src/`.
+- **Package Manager:** Choose a package manager (npm, yarn, pnpm) during setup, consistent with the choice made during project initiation (Step 1 of the Development Workflow). Maintain consistency throughout development (use `npm install`/`npm run`, `yarn add`/`yarn`, `pnpm add`/`pnpm` respectively).
+- **Verification:** After initialization, quickly verify the presence and basic content of key configuration files: `tsconfig.json`, `next.config.ts`, `postcss.config.mjs`, and ideally `tailwind.config.ts`.
+
+## 4. TypeScript
+
+### 4.1. Configuration (`tsconfig.json`)
+
+- **`strict` Mode:** **Crucial.** Always enable `strict: true` in `compilerOptions`. This activates all strict type-checking options (`noImplicitAny`, `strictNullChecks`, `strictFunctionTypes`, etc.) and is the foundation for robust TypeScript code. `create-next-app` usually enables this by default when selecting TypeScript.
+- **`target` & `module`:** Set `target` to a modern ECMAScript version (e.g., `ES2022`, `ESNext`) to leverage newer language features. For `module` and `moduleResolution`, use modern settings compatible with Node.js and bundlers, such as `module: "ESNext"` and `moduleResolution: "Bundler"` or `"NodeNext"`. `create-next-app` typically handles this well.
+  ```json
+  // Example snippet from tsconfig.json compilerOptions
+  "target": "ES2022",
+  "lib": ["dom", "dom.iterable", "esnext"],
+  "module": "ESNext",
+  "moduleResolution": "Bundler",
+  // ... other options
+  "strict": true,
+  "noEmit": true, // Next.js handles transpilation, tsc only performs type checking
+  "esModuleInterop": true,
+  "jsx": "preserve", // Next.js handles JSX transformation
+  "incremental": true,
+  ```
+- **`paths` (Absolute Imports):** Configure `paths` for cleaner, absolute imports (e.g., `@/components/*` mapping to `src/components/*` or `components/*`). This significantly improves refactoring and readability compared to long relative paths (`../../../components/...`). `create-next-app` often configures `@/*` mapping to `./` or `./src/` by default.
+  ```json
+  // Example snippet from tsconfig.json compilerOptions
+  "baseUrl": ".",
+  "paths": {
+    "@/*": ["./src/*"] // Adjust if not using src/ directory
+  }
+  ```
+- **Other Important Flags:**
+    - `allowJs: true`: Allows importing JavaScript files (useful for gradual migration or third-party libs).
+    - `skipLibCheck: true`: Skips type checking of declaration files (`.d.ts`), speeding up compilation.
+    - `forceConsistentCasingInFileNames: true`: Prevents hard-to-debug errors on case-sensitive file systems.
+    - `resolveJsonModule: true`: Allows importing `.json` files.
+    - `isolatedModules: true`: Ensures files can be transpiled individually (required by some tools).
+
+### 4.2. Typing
+
+- Prefer `interface` for defining object shapes and for class implementations (due to declaration merging). Use `type` for utility types, unions, intersections, primitive aliases, mapped types, and conditional types.
+- **Avoid `any` rigorously.** Use `unknown` when the type is genuinely unknown and perform necessary type checks (using `typeof`, `instanceof`, or type guards).
+- Utilize TypeScript's utility types (`Partial`, `Required`, `Pick`, `Omit`, `Readonly`, `Record`, etc.) effectively.
+- Leverage mapped types and conditional types for advanced type transformations.
+- Explicitly type function parameters and return types, especially for public/exported APIs. Use inference for local variables where clarity isn't sacrificed.
+- Use the `satisfies` operator to validate that an expression conforms to a type without changing the expression's inferred type.
+- Use `const` assertions (`as const`) for creating truly immutable values and narrow types (e.g., for string literal unions).
+
+### 4.3. Naming and Style
+
+- Use `PascalCase` for types, interfaces, enums, and React components.
+- Use `camelCase` for variables, functions, and parameters.
+- Use `UPPER_SNAKE_CASE` for constant values (especially primitive globals).
+- Adhere strictly to the ESLint and Prettier configurations defined in the project.
+
+## 5. Next.js
+
+### 5.1. File Structure and Routing (App Router)
+
+- Default to the App Router (`app/` directory) for all new features.
+- Logically organize routes, layouts, components, and API handlers within the `app/` directory.
+- Utilize file conventions: `page.tsx` (UI), `layout.tsx` (Shared UI), `template.tsx` (Re-rendered layout), `loading.tsx` (Loading UI), `error.tsx` (Error UI), `route.ts` (API Endpoints).
+- Use Route Groups `(groupName)` to organize routes without affecting the URL path.
+- Use Parallel Routes (`@slotName`) for displaying multiple independent sections on the same layout.
+
+### 5.2. Components (Server & Client)
+
+- **Default to Server Components.** They run on the server, reduce client-side JavaScript, and can directly access server resources (like databases) and perform data fetching.
+- Use the `"use client"` directive **only when necessary** for components requiring:
+  - Interactivity and event listeners (`onClick`, `onChange`, etc.).
+  - State and lifecycle hooks (`useState`, `useEffect`, `useReducer`).
+  - Browser-only APIs (e.g., `localStorage`, `window`).
+  - Custom hooks depending on state or browser APIs.
+  - React Context (consumed via hook).
+- Keep Client Components as small and leaf-like as possible in the component tree. Pass Server Components as `children` to Client Components where feasible.
+- Understand the Server/Client component boundary and serialization limitations.
+
+### 5.3. Data Fetching & Mutations
+
+- Use `fetch` (extended by Next.js) with `async/await` directly within Server Components for data fetching.
+- Leverage Next.js caching (`cache`, `no-store`) and revalidation (`revalidate`) options within `fetch` or via Route Segment Config (`export const revalidate = ...`).
+- **Prefer Server Actions** for data mutations (`POST`, `PUT`, `DELETE`). Define actions in Server Components or separate files (`actions.ts`) and invoke them using forms or `startTransition`.
+- For complex client-side data fetching or caching needs (often less necessary with App Router), consider libraries like SWR or TanStack Query (React Query).
+
+### 5.4. Optimizations
+
+- Always use `<Image>` (`next/image`) for automatic image optimization (resizing, format conversion, lazy loading).
+- Always use `<Link>` (`next/link`) for client-side navigation between routes (prefetching).
+- Use `next/dynamic` for dynamically importing components or libraries that are not needed on the initial page load, especially large ones or those only used in Client Components.
+- Analyze bundle sizes using `@next/bundle-analyzer`.
+
+### 5.5. Turbopack (Development)
+
+- **What it is:** Turbopack is a Rust-based incremental bundler, developed to be the successor to Webpack in Next.js, focusing on performance.
+- **Benefits:** Offers drastic speed improvements for the local development server (`next dev`), including faster startup and near-instantaneous Fast Refresh.
+- **How to Use:** Activate Turbopack for development by running the command `next dev --turbo`.
+- **Recommendation:**
+    - **Use `next dev --turbo` for local development:** Take advantage of the speed gains, especially in larger projects.
+    - **Production (`next build`):** While support for `next build` with Turbopack is under development, Webpack is still the more stable default for production builds. Monitor the official Next.js documentation for updates on Turbopack's production stability before adopting it in that environment.
+
+## 6. Tailwind CSS
+
+### 6.1. Configuration (`tailwind.config.ts`)
+
+- **Location & Existence:** The `create-next-app` command *should* generate this file (typically `tailwind.config.ts` or `.js`) in the project root when Tailwind is selected. Verify its existence after setup. If missing but `postcss.config.mjs` exists and includes the Tailwind plugin, Tailwind might be using default settings, but creating the config file is recommended for customization.
+- **Use TypeScript Config:** Prefer `tailwind.config.ts` over `.js` for type checking benefits when defining the configuration object.
+- **`content` Array:** **Crucial for Production.** This array tells Tailwind which files to scan for class names to avoid purging unused styles. Ensure it accurately includes all relevant file paths where you use Tailwind classes. If using a `src/` directory, paths will likely need to start with `./src/`.
+  ```typescript
+  // Example tailwind.config.ts content array
+  content: [
+    './src/pages/**/*.{js,ts,jsx,tsx,mdx}', // If using pages/ dir
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}', // For App Router
+    // Add other paths if necessary
+  ],
+  ```
+- **`theme.extend`:** Customize or add to Tailwind's default theme (colors, fonts, spacing, etc.) within the `theme.extend` object. Avoid overwriting the entire `theme` object unless absolutely necessary.
+- **Plugins:** Utilize official Tailwind plugins (`@tailwindcss/forms`, `@tailwindcss/typography`, `@tailwindcss/aspect-ratio`) or third-party plugins to add common UI patterns or utilities. Install them via your package manager and add them to the `plugins` array in the config file.
+
+### 6.2. Utility-First Approach
+
+- Apply utility classes directly in your JSX/HTML whenever possible.
+- Avoid premature abstraction into custom CSS classes; favor utilities for direct styling.
+
+### 6.3. Abstraction and Components
+
+- Encapsulate repeated patterns of utility classes into reusable React components (e.g., `<Button>`, `<Card>`, `<Input>`). This is the preferred method of abstraction.
+- Use the `@apply` directive sparingly, primarily for integrating with third-party libraries or existing CSS where component abstraction isn't feasible. Overuse can lead back to the maintainability issues of traditional CSS.
+- Consider libraries like `cva` (Class Variance Authority) or `tailwind-merge` for managing conditional and merging Tailwind classes within components.
+
+### 6.4. Tooling
+
+- Integrate `prettier-plugin-tailwindcss` to automatically sort Tailwind classes according to the recommended order, improving readability and consistency.
+
+### 6.5. Customizing Shadcn/ui Themes
+
+- **CSS Variables:** The primary way to customize the look and feel (colors, radius) of Shadcn/ui components is by overriding the CSS variables defined in `globals.css` (within `:root` for light mode and `.dark` for dark mode).
+- **Color Palette:** You can replace the default color palette (e.g., `slate`, `neutral`) by defining new values for variables like `--background`, `--foreground`, `--primary`, `--secondary`, etc., using formats like `hsl()` or `oklch()`.
+- **Radius:** Adjust the base border radius by changing the `--radius` variable.
+- **Fonts:** Integrate custom fonts using `next/font` and update the `--font-sans` (or `--font-mono`) variable definition in the `@theme` directive within `globals.css` to point to your font's CSS variable.
+
+## 7. General Practices
+
+### 7.1. Component Organization
+
+- Maintain a clear component structure (e.g., `src/components/ui`, `src/components/features`, `src/components/layouts`).
+- Use `index.ts` files (barrel files) judiciously within component folders to simplify import paths, but be mindful of potential impacts on tree-shaking in some bundlers.
+- Colocate components with their specific routes/features when they aren't shared.
+
+### 7.2. Naming Conventions
+
+- Use descriptive and consistent names for files, components, variables, functions, and types. Follow the TypeScript naming conventions outlined above.
+
+### 7.3. Linting and Formatting
+
+- **Setup:** `create-next-app` provides a solid starting point by setting up ESLint (often using `eslint-config-next`) and Prettier when selected during initialization. It typically creates `eslint.config.mjs` (or `.eslintrc.json`) and `.prettierrc` (or includes settings in `package.json`).
+- **ESLint v9+ (Flat Config):** Modern ESLint versions (v9+) use a "flat config" file named `eslint.config.mjs` (or `.js`) by default. Verify your project uses this format.
+- **TypeScript ESLint:** For TypeScript projects, ensure the necessary ESLint plugins and parser are installed:
+  ```bash
+  yarn add -D typescript-eslint # Or npm/pnpm equivalent
+  ```
+- **Basic `eslint.config.mjs` Example (Integrating Next.js & Prettier):** A typical flat config for Next.js might look like this (requires `eslint-config-next`, `typescript-eslint`, `eslint-config-prettier`):
+  ```javascript
+  // eslint.config.mjs
+  import tseslint from 'typescript-eslint';
+  import nextPlugin from '@next/eslint-plugin-next'; // Import Next.js plugin config
+  import reactRecommended from 'eslint-plugin-react/configs/recommended.js';
+  import reactJsxA11yRecommended from 'eslint-plugin-jsx-a11y/dist/configs/recommended.js';
+  import prettierConfig from 'eslint-config-prettier';
+
+  export default tseslint.config(
+    {
+      // Global ignores
+      ignores: ['dist/', 'node_modules/', '.next/', '**/.*config.js', '**/.*rc.js'],
+    },
+    // Base JS/TS config (can often be part of Next.js config)
+    {
+      files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+      extends: [
+        ...tseslint.configs.recommended, // Or recommendedTypeChecked
+      ],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'warn',
+        // Add other general rules
+      },
+    },
+    // React specific config
+    {
+      files: ['**/*.{jsx,tsx}'],
+      ...reactRecommended,
+      settings: { react: { version: 'detect' } }, // Detect React version
+    },
+    // Next.js specific config (from eslint-config-next)
+    {
+      files: ['**/*.{js,jsx,ts,tsx}'],
+      plugins: { 
+        '@next/next': nextPlugin 
+      },
+      rules: {
+        ...nextPlugin.configs.recommended.rules, 
+        ...nextPlugin.configs['core-web-vitals'].rules, // Include core web vitals rules
+        // Override Next.js specific rules if needed
+      },
+    },
+    // Accessibility rules
+    {
+       files: ['**/*.{jsx,tsx}'],
+      ...reactJsxA11yRecommended,
+    },
+    // Prettier config (must be last)
+    prettierConfig,
+  );
+  ```
+  *Note: `eslint-config-next` might provide a simpler way to compose these configs; always check its documentation for the latest recommendations.*
+
+- **ESLint Configuration (`eslint-config-next`):** This configuration is specifically tailored for Next.js, including rules for React, accessibility (`jsx-a11y`), and Next.js-specific patterns. Trusting these defaults is generally a good starting point.
+- **Prettier Integration:** Ensure ESLint and Prettier work together without conflicts. `eslint-config-prettier` (often included by `eslint-config-next`) disables ESLint formatting rules that conflict with Prettier. The `eslint-plugin-prettier` runs Prettier as an ESLint rule.
+- **Tailwind Plugin (`prettier-plugin-tailwindcss`):** **Highly Recommended.** Install this plugin (`yarn add -D prettier-plugin-tailwindcss`) and ensure Prettier picks it up (usually automatic). It automatically sorts Tailwind classes according to the recommended order, drastically improving readability and consistency in JSX.
+- **Review and Adjust:** While defaults are good, review the generated ESLint configuration (`eslint.config.mjs` or equivalent). You might want to adjust specific rules based on team preferences, although sticking close to `eslint-config-next` recommendations is advised.
+- **IDE Integration:** Configure your IDE (like Cursor) to use the project's ESLint and Prettier configurations for automatic linting and formatting on save.
+- **Pre-commit Hooks:** Integrate linting and formatting into pre-commit hooks (e.g., using Husky and lint-staged) to enforce code quality before code enters the repository.
+
+### 7.4. Testing
+
+- Implement a solid testing strategy:
+  - **Unit Tests:** Test individual functions, hooks, and utility components in isolation (e.g., using Vitest or Jest).
+  - **Integration Tests:** Test interactions between components (e.g., using React Testing Library).
+  - **End-to-End (E2E) Tests:** Test user flows through the application (e.g., using Playwright or Cypress).
+- Aim for good test coverage of critical paths and logic.
+
+### 7.5. State Management
+
+- Use React Context for simple global state shared across few components.
+- For more complex or frequently updated global state, prefer dedicated libraries like Zustand or Jotai, which are generally simpler and perform better than Redux for many use cases.
+- Lift state up only as far as necessary. Avoid excessive prop drilling. Leverage component composition.
+- Understand the difference between server-side state (managed via data fetching/actions) and client-side UI state.
+
+## 8. Related Zsh Commands
+
+*(Replace `yarn` with `npm run` or `pnpm` if using those package managers)*
+
+- **Setup:**
+  - `yarn create next-app <project-name> --ts --eslint --tailwind --src-dir --app --use-yarn` (or `cna` alias)
+  - `yarn add <dependency>` (`ya` alias)
+  - `yarn add -D <dev-dependency>` (`yad` alias)
+  - `npx shadcn-ui@latest init` (if using Shadcn)
+  - `npx shadcn-ui@latest add <component>` (if using Shadcn)
+- **Development:**
+  - `yarn dev` (`yd` alias) - Starts the development server.
+  - `yarn dev --turbo` - Starts development server with Turbopack (faster).
+- **Build:**
+  - `yarn build` (`yb` alias) - Creates a production build.
+- **Linting & Formatting:**
+  - `yarn lint` (`yl` or `yln` alias) - Runs ESLint.
+  - `yarn lint:fix` (`ylf` or `ylnf` alias) - Runs ESLint and attempts to fix issues.
+  - `yarn format` (`yf` alias) - (If configured) Runs Prettier.
+- **Testing:**
+  - `yarn test` (`yt` alias) - Runs tests (Jest/RTL). Refer to `testing.mdc`.
+- **Dependency Management:**
+  - `yarn outdated` (`yout` alias) - Checks for outdated dependencies.
+  - `yarn upgrade-interactive --latest` (`yui` or `yuil` alias) - Interactively updates dependencies.
